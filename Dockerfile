@@ -1,18 +1,14 @@
-# backend/Dockerfile
-FROM node:18-alpine AS builder
+# Dockerfile in backend repo
+FROM node:18-alpine
+
 WORKDIR /app
 
-# ─── everything is *already* in /backend context ───
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
-COPY tsconfig*.json ./
-COPY src ./src        
+COPY . .
+
 RUN npm run build
 
-FROM node:18-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-CMD ["node", "dist/index.js"]
 EXPOSE 4000
+CMD ["npm", "start"]

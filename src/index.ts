@@ -7,10 +7,10 @@
  */
 
 import express from "express";
-import { Request, Response, NextFunction } from "express";
 
 import cors from "cors";
 import { router as choreRoutes } from "./routes/choreRoutes";
+import userRoutes  from "./routes/userRoutes";
 
 const app = express();
 
@@ -21,6 +21,7 @@ app.use(express.json());   // parse JSON bodies into req.body
 
 // ─────── Feature routers ───────
 app.use("/chores", choreRoutes);  // all chore endpoints
+app.use("/user", userRoutes);  // all user endpoints
 
 // ─────── Boot HTTP server ───────
 const PORT = process.env.PORT || 4000;

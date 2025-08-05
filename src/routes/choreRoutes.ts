@@ -8,7 +8,7 @@ import * as c from "../controllers/choreController";
 
 export const router = Router();
 
-router.post("/", c.create);
+router.get("/", (_, res) =>{ res.send("backend is working")});
 router.get("/my", c.myChores);
 router.get("/available", c.available);
 router.get("/unapproved", c.unapproved);

@@ -3,7 +3,7 @@ import { Knex } from "knex";
 export async function up(knex: Knex): Promise<void> {
 
   return knex.schema.createTable("chores", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table.uuid("uuid").primary().defaultTo(knex.raw("gen_random_uuid()"));
     // table.uuid("template_id").references("id").inTable("chore_templates").onDelete("CASCADE");
     // table.uuid("user_id").references("id").inTable("users").defaultTo("NULL");
     table.string("status").notNullable().defaultTo("unapproved");

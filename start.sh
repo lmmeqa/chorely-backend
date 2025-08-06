@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-KNEX="npx knex --knexfile ./src/db/config/knexfile.js"  # plain JS file
+KNEX="npx knex --knexfile ./src/db/config/knexfile"  # plain JS file
 
 echo "⏳  Waiting for Postgres (db:5432)…"
 until pg_isready -h db -p 5432 -U postgres >/dev/null 2>&1; do
@@ -17,4 +17,4 @@ $KNEX migrate:latest
 $KNEX seed:run
 
 echo "🚀  Starting backend (ts-node-dev)…"
-exec npx ts-node-dev --respawn --transpile-only src/index.ts
+exec npx ts-node-dev --respawn --transpile-only src/index

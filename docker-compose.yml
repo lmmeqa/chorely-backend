@@ -10,7 +10,7 @@ services:
       - /app/node_modules     # keep container deps isolated
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/chorely
-    command: ["sh", "./start.sh"]
+    command: ["sh", "./start_demo.sh"]
     ports:
       - "4000:4000"
     depends_on:

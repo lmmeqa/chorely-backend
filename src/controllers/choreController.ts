@@ -17,7 +17,7 @@ export const listUnapproved = controller(async (req, res) => {
 
 export const listUserChores = controller(async (req, res) => {
   const statuses = req.query.status ? (req.query.status as string).split(",") : undefined;
-  res.json(await Chore.forUser(req.params.email, statuses as any));
+  res.json(await Chore.forUser(req.body.email, statuses as any));
 });
 
 export const approveChore = controller(async (req, res) => {

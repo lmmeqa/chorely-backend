@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: https://github.com/lmmeqa/chorely-backend.git
+      dockerfile: Dockerfile_demo
+    volumes:
+      - ./:/app        # live-reload
+      - /app/node_modules     # keep container deps isolated
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/chorely
+    command: ["sh", "./start.sh"]
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chorely
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

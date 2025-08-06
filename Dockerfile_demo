@@ -1,0 +1,37 @@
+# ────────────────────────────────────────────────────────────
+#   🐳 Chorely backend – demo‑day Dockerfile
+#   • builds TypeScript once, runs **compiled JS** → fast startup
+#   • installs only prod deps in runtime image
+#   • keeps migrations/seeds so container can self‑bootstrap
+# ────────────────────────────────────────────────────────────
+
+######################## 1️⃣  builder stage ########################
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --ignore-scripts --prefer-offline
+
+# copy source and build TypeScript → dist/
+COPY . ./
+RUN npm run build  # outputs compiled JS to /app/dist
+
+######################## 2️⃣  runtime stage ########################
+FROM node:18-alpine
+WORKDIR /app
+
+# copy prod deps only (shrinks image, speeds cold‑start)
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev --prefer-offline --ignore-scripts
+
+# copy compiled JS + knex artefacts + wait‑script
+COPY --from=builder /app/dist        ./dist
+COPY --from=builder /app/src/db      ./src/db
+COPY --from=builder /app/start.sh    ./start.sh
+RUN chmod +x start.sh
+
+EXPOSE 4000
+ENV NODE_ENV=production
+
+# entrypoint: wait for Postgres → migrate → seed → run compiled app
+CMD ["./start.sh", "prod"]

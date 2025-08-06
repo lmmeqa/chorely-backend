@@ -3,7 +3,7 @@ WORKDIR /app
 
 # install all deps for build (dev+prod)
 COPY package*.json ./
-RUN npm i
+RUN npm ci --ignore-scripts --prefer-offline
 
 # copy source & build
 COPY . ./

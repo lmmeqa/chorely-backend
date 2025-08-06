@@ -1,7 +1,7 @@
 # VCS & editors
 .git
 .gitignore
-*.md
+# *.md
 .vscode
 .idea
 

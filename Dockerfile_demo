@@ -27,11 +27,6 @@ RUN npm ci --omit=dev --prefer-offline --ignore-scripts
 # copy compiled JS + knex artefacts + wait‑script
 COPY --from=builder /app/dist        ./dist
 COPY --from=builder /app/src/db      ./src/db
-# copy compiled JS + knex artefacts + wait‑script
-COPY --from=builder /app/dist        ./dist
-COPY --from=builder /app/src/db      ./src/db
-COPY --from=builder /app/start.sh    ./start.sh
-RUN chmod +x start.sh
 
 # runtime needs `pg_isready` used in start.sh
 RUN apk add --no-cache postgresql-client

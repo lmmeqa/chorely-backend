@@ -34,8 +34,8 @@ COPY --from=builder /app/dist ./dist
 # COPY --from=builder /app/src/db/seeds/             ./src/db/config/seeds/
 
 # start script
-COPY --from=builder /app/start_demo.sh ./start.sh
-RUN chmod +x start.sh
+COPY --from=builder /app/start_demo.sh ./start_demo.sh
+RUN chmod +x start_demo.sh
 
 # pg_isready for wait loop
 RUN apk add --no-cache postgresql-client
@@ -43,4 +43,4 @@ RUN apk add --no-cache postgresql-client
 EXPOSE 4000
 ENV NODE_ENV=production
 
-CMD ["./start.sh"]
+CMD ["./start_demo.sh"]

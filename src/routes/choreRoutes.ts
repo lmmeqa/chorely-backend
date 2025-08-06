@@ -1,20 +1,26 @@
-/**
- * Express sub-router – keeps the main entry uncluttered.
- * URL prefix is determined in `index.ts`.
- */
-
 import { Router } from "express";
-import * as c from "../controllers/choreController";
+import {
+  createChore,
+  listAvailable,
+  listUnapproved,
+  listUserChores,
+  approveChore,
+  claimChore,
+  completeChore,
+  verifyChore,
+} from "../controllers/choreController";
 
-export const router = Router();
+const r = Router();
 
-router.get("/", (_, res) =>{ res.send("backend is working")});
-// router.get("/my", c.myChores);
-// router.get("/available", c.available);
-// router.get("/unapproved", c.unapproved);
+r.post("/", createChore);                       // POST /chores
 
-// router.get("/:uuid", c.getById);
-// router.post("/:uuid/approve", c.approve);
-// router.post("/:uuid/claim", c.claim);
-// router.post("/:uuid/complete", c.complete);
-// router.post("/:uuid/verify", c.verify);
+r.get("/available/:homeId",  listAvailable);    // GET /chores/available/:homeId
+r.get("/unapproved/:homeId", listUnapproved);   // GET /chores/unapproved/:homeId
+r.get("/user/:email",        listUserChores);   // GET /chores/user/:email?status=a,b
+
+r.patch("/:uuid/approve",  approveChore);       // PATCH /chores/:uuid/approve
+r.patch("/:uuid/claim",    claimChore);         // PATCH /chores/:uuid/claim
+r.patch("/:uuid/complete", completeChore);      // PATCH /chores/:uuid/complete
+r.patch("/:uuid/verify",   verifyChore);        // PATCH /chores/:uuid/verify
+
+export default r;

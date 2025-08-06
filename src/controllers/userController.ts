@@ -2,26 +2,24 @@
 import { controller } from "./.controller";
 import User from "../db/models/User";
 
-/* POST /users */
 export const createUser = controller(async (req, res) => {
-  const user = await User.create(req.body.email, req.body.home_id);
+  const user = await User.create(req.body.email, req.body.homeIds); // homeIds: string[]
   res.status(201).json(user);
 });
 
-/* GET /user/login */
-export const getUser = controller(async (req, res) => {
+export const loginUser = controller(async (req, res) => {
   const user = await User.findByEmail(req.body.email);
-  user ? res.json(user) : res.status(404).end();
+  res.json(user);                                  // 200
 });
 
-/* GET /user/homes */
-export const getHomes = controller(async (req, res) => {
-  // 1. fetch user row (throws 404 if not found)
-  const user = await User.findByEmail(req.body.email);
-  if (!user) throw new Error("User not found");
-
-  // 2. pull all homes via join table
+export const getUserHomes = controller(async (req, res) => {
+  const user = await User.findByEmail(req.params.email);
   const homes = await User.homes(user.id);
+  res.json(homes);
+});
 
-  res.json(homes);               // always 200 on success
+export const joinHome = controller(async (req, res) => {
+  const user = await User.findByEmail(req.body.email);
+  await User.joinHome(user.id, req.body.homeId);
+  res.status(204).end();
 });

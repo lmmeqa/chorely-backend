@@ -9,9 +9,10 @@ import { Request, Response, NextFunction } from "express";
 
 import express from "express";
 import cors from "cors";
-import { router as choreRoutes } from "./routes/choreRoutes";
+import choreRoutes from "./routes/choreRoutes";
 import userRoutes  from "./routes/userRoutes";
 import { DatabaseError } from "pg";
+import homeRoutes from "./routes/homeRoutes";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(express.json());   // parse JSON bodies into req.body
 // ─────── Feature routers ───────
 app.use("/chores", choreRoutes);  // all chore endpoints
 app.use("/user", userRoutes);  // all user endpoints
+app.use("/homes",  homeRoutes); // all home endpoints
 
 
 /** last middleware: converts every error into JSON */

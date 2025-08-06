@@ -1,8 +1,19 @@
 #!/bin/sh
+set -e
 
-echo "Running migrations..."
-npx knex migrate:latest --knexfile ./src/db/config/knexfile.ts
-npx knex seed:run --knexfile ./src/db/config/knexfile.ts
+KNEX="npx knex --knexfile ./src/db/config/knexfile.ts"
 
-echo "Starting backend..."
+echo "⏳  Waiting for Postgres (db:5432)…"
+until nc -z db 5432; do
+  sleep 1
+done
+
+echo "🔓  Unlocking…"
+$KNEX migrate:unlock || true
+
+echo "🔄  Migrating & seeding…"
+$KNEX migrate:latest
+$KNEX seed:run
+
+echo "🚀  Starting backend…"
 npm start

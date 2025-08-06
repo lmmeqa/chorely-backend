@@ -9,7 +9,8 @@ import * as u from "../controllers/userController";
 const router = Router();
 
 
-router.post("/create", u.create)
+router.post("/create", u.createUser)
+router.post("/login", u.getUser)
 
 // router.get("/", (_, res) =>{ res.send("backend is working")});
 // router.get("/my", c.myChores);

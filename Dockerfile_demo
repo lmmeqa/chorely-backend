@@ -1,0 +1,39 @@
+######################## 1️⃣  builder stage ########################
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# install all deps for build (dev+prod)
+COPY package*.json ./
+RUN npm ci --ignore-scripts --prefer-offline
+
+# copy source & build
+COPY . ./
+RUN npm run build     # emits dist/
+
+######################## 2️⃣  runtime stage ########################
+FROM node:18-alpine
+WORKDIR /app
+
+# prod deps only ➜ smaller image
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev --prefer-offline --ignore-scripts
+
+# compiled application
+COPY --from=builder /app/dist ./dist
+
+# knex runtime artefacts (if not compiled, use raw TS source)
+COPY --from=builder /app/src/db/config/knexfile.ts ./src/db/config/knexfile.ts
+COPY --from=builder /app/src/db/migrations        ./src/db/migrations
+COPY --from=builder /app/src/db/seeds             ./src/db/seeds
+
+# start script
+COPY --from=builder /app/start_demo.sh ./start.sh
+RUN chmod +x start.sh
+
+# pg_isready for wait loop
+RUN apk add --no-cache postgresql-client
+
+EXPOSE 4000
+ENV NODE_ENV=production
+
+CMD ["./start.sh"]

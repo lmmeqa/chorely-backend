@@ -23,8 +23,8 @@ COPY --from=builder /app/dist ./dist
 
 # knex runtime artefacts (if not compiled, use raw TS source)
 COPY --from=builder /app/src/db/config/knexfile.ts ./src/db/config/knexfile.ts
-COPY --from=builder /app/src/db/migrations        ./src/db/migrations
-COPY --from=builder /app/src/db/seeds             ./src/db/seeds
+COPY --from=builder /app/src/db/config/migrations        ./src/db/config/migrations
+COPY --from=builder /app/src/db/config/seeds             ./src/db/config/seeds
 
 # start script
 COPY --from=builder /app/start_demo.sh ./start.sh

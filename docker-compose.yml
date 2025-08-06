@@ -5,12 +5,9 @@ services:
     build:
       context: https://github.com/lmmeqa/chorely-backend.git
       dockerfile: Dockerfile_demo
-    volumes:
-      - ./:/app        # live-reload
-      - /app/node_modules     # keep container deps isolated
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/chorely
-    command: ["sh", "./start_demo.sh"]
+    command: ["sh", "start_demo.sh"]
     ports:
       - "4000:4000"
     depends_on:

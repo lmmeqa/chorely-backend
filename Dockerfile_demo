@@ -1,37 +1,46 @@
 # ────────────────────────────────────────────────────────────
-#   🐳 Chorely backend – demo‑day Dockerfile
-#   • builds TypeScript once, runs **compiled JS** → fast startup
-#   • installs only prod deps in runtime image
-#   • keeps migrations/seeds so container can self‑bootstrap
+#  🐳 Chorely backend – demo‑day Dockerfile
+#     • builds TypeScript once, runs compiled JS (fast startup)
+#     • runtime image only prod deps + compiled artefacts
+#     • waits for Postgres → migrate → seed (if empty) → start
 # ────────────────────────────────────────────────────────────
 
 ######################## 1️⃣  builder stage ########################
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+# install all deps for build (dev+prod)
 COPY package*.json ./
 RUN npm ci --ignore-scripts --prefer-offline
 
-# copy source and build TypeScript → dist/
+# copy source & build
 COPY . ./
-RUN npm run build  # outputs compiled JS to /app/dist
+RUN npm run build     # emits dist/
 
 ######################## 2️⃣  runtime stage ########################
 FROM node:18-alpine
 WORKDIR /app
 
-# copy prod deps only (shrinks image, speeds cold‑start)
+# prod deps only ➜ smaller image
 COPY --from=builder /app/package*.json ./
 RUN npm ci --omit=dev --prefer-offline --ignore-scripts
 
-# copy compiled JS + knex artefacts + wait‑script
-COPY --from=builder /app/dist        ./dist
+# compiled application
+COPY --from=builder /app/dist ./dist
 
-# runtime needs `pg_isready` used in start.sh
+# knex runtime artefacts (JS only)
+COPY --from=builder /app/dist/src/db/config/knexfile.js ./src/db/config/knexfile.js
+COPY --from=builder /app/src/db/migrations        ./src/db/migrations
+COPY --from=builder /app/src/db/seeds             ./src/db/seeds
+
+# start script
+COPY --from=builder /app/start_demo.sh ./start.sh
+RUN chmod +x start.sh
+
+# pg_isready for wait loop
 RUN apk add --no-cache postgresql-client
 
 EXPOSE 4000
 ENV NODE_ENV=production
 
-# entrypoint: wait for Postgres → migrate → seed → run compiled app
-CMD ["./start_demo.sh", "prod"]
+CMD ["./start_demo.sh"]

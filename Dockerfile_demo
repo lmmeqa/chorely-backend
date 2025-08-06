@@ -30,8 +30,8 @@ COPY --from=builder /app/dist ./dist
 
 # knex runtime artefacts (JS only)
 COPY --from=builder /app/dist/src/db/config/knexfile.js ./src/db/config/knexfile.js
-COPY --from=builder /app/src/db/migrations        ./src/db/migrations
-COPY --from=builder /app/src/db/seeds             ./src/db/seeds
+COPY --from=builder /app/dist/src/db/migrations        ./src/db/migrations
+COPY --from=builder /app/dist/src/db/seeds             ./src/db/seeds
 
 # start script
 COPY --from=builder /app/start_demo.sh ./start_demo.sh

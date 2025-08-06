@@ -34,4 +34,4 @@ EXPOSE 4000
 ENV NODE_ENV=production
 
 # entrypoint: wait for Postgres → migrate → seed → run compiled app
-CMD ["./start.sh", "prod"]
+CMD ["./start_demo.sh", "prod"]

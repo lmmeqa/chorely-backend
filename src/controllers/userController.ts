@@ -13,3 +13,15 @@ export const getUser = controller(async (req, res) => {
   const user = await User.findByEmail(req.body.email);
   user ? res.json(user) : res.status(404).end();
 });
+
+/* GET /user/homes */
+export const getHomes = controller(async (req, res) => {
+  // 1. fetch user row (throws 404 if not found)
+  const user = await User.findByEmail(req.body.email);
+  if (!user) throw new Error("User not found");
+
+  // 2. pull all homes via join table
+  const homes = await User.homes(user.id);
+
+  res.json(homes);               // always 200 on success
+});

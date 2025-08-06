@@ -24,9 +24,7 @@ export default class User {
     return await db.transaction(async (trx) => {
       // 1. insert user
       const user = (
-        await trx("users")
-          .insert({ email })
-          .returning<UserRow[]>("*")
+        await trx("users").insert({ email }).returning<UserRow[]>("*")
       )[0];
 
       // 2. link to homes
@@ -40,12 +38,12 @@ export default class User {
     });
   }
 
-  static findByEmail(email: string) {
+  static async findByEmail(email: string) {
     return db<UserRow>("users").where({ email }).first();
   }
 
   /** all homes for a user */
-  static homes(userId: string) {
+  static async homes(userId: string) {
     return db("homes")
       .join("user_homes", "homes.id", "user_homes.home_id")
       .where("user_homes.user_id", userId)
@@ -60,9 +58,7 @@ export default class User {
   /** remove user from a home – prevents orphaning */
   static async leaveHome(userId: string, homeId: string) {
     await db.transaction(async (trx) => {
-      await trx("user_homes")
-        .where({ user_id: userId, home_id: homeId })
-        .del();
+      await trx("user_homes").where({ user_id: userId, home_id: homeId }).del();
 
       const remaining = await trx("user_homes")
         .where({ user_id: userId })

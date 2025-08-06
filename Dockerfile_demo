@@ -29,9 +29,9 @@ RUN npm ci --omit=dev --prefer-offline --ignore-scripts
 COPY --from=builder /app/dist ./dist
 
 # knex runtime artefacts (JS only)
-COPY --from=builder /app/dist/src/db/config/knexfile.js ./src/db/config/knexfile.js
-COPY --from=builder /app/dist/src/db/config/migrations        ./src/db/config/migrations
-COPY --from=builder /app/src/db/config/seeds             ./src/db/config/seeds
+COPY --from=builder /app/dist/src/db/config/knexfile.js ./dist/src/db/config/knexfile.js
+COPY --from=builder /app/dist/src/db/config/migrations        ./dist/src/db/config/migrations
+COPY --from=builder /app/src/db/config/seeds             ./dist/src/db/config/seeds
 
 # start script
 COPY --from=builder /app/start_demo.sh ./start_demo.sh

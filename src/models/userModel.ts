@@ -30,7 +30,7 @@ export const createUser = async (
 /** Fetch a single chore row (or undefined) */
 export const getUser = async (uuid: string) => {
   const { rows } = await pool.query(
-    `SELECT * FROM user WHERE uuid = $1`,
+    `SELECT * FROM users WHERE uuid = $1`,
     [uuid]
   );
   return rows[0];

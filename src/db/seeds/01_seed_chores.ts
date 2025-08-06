@@ -31,63 +31,63 @@ export async function seed(knex: Knex): Promise<void> {
      specific chore row. */
   const templates = [
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Sorting Boxes',
       description: 'Sort and label storage boxes',
       icon: 'package',
       default_time: 75,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Organizing Shelves',
       description: 'Organize the living-room shelves',
       icon: 'package',
       default_time: 75,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Dusting',
       description: 'Dust all surfaces',
       icon: 'feather',
       default_time: 25,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Mopping Floors',
       description: 'Mop kitchen & bath',
       icon: 'droplets',
       default_time: 35,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Taking Out Trash',
       description: 'Empty all bins & take to curb',
       icon: 'trash-2',
       default_time: 10,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Sweeping Porch',
       description: 'Sweep the front porch',
       icon: 'brush',
       default_time: 15,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Washing Dishes',
       description: 'Wash and dry dishes',
       icon: 'droplets',
       default_time: 30,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Vacuuming House',
       description: 'Vacuum entire house',
       icon: 'wind',
       default_time: 45,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
       name: 'Laundry',
       description: 'Wash, dry & fold laundry',
       icon: 'shirt',
@@ -105,52 +105,52 @@ export async function seed(knex: Knex): Promise<void> {
   const chores = [
     // unapproved
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[0].id,
       status: 'unapproved',
     //   assigned_to: null,
     },
     // unclaimed
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[1].id,
       status: 'unclaimed',
     //   assigned_to: null,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[2].id,
       status: 'unclaimed',
     //   assigned_to: null,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[3].id,
       status: 'unclaimed',
     //   assigned_to: null,
     },
     // claimed
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[5].id,
       status: 'claimed',
     //   assigned_to: null,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[6].id,
       status: 'claimed',
     //   assigned_to: null,
     },
     // complete
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[7].id,
       status: 'complete',
     //   assigned_to: null,
     },
     {
-      id: uuid(),
+      uuid: uuid(),
     //   template_id: templates[8].id,
       status: 'complete',
     //   assigned_to: null,
@@ -159,39 +159,4 @@ export async function seed(knex: Knex): Promise<void> {
 
   await knex('chores').insert(
     chores.map((c) => ({ ...c, created_at: now, updated_at: now }))
-  );
-
-  // 5️⃣  Todo items -------------------------------------------------
-  /* Attach todos to a subset of chores.  In real life you’ll probably
-     seed from JSON or another fixture source. */
-  type TodoSeed = { choreIndex: number; name: string; description: string };
-  const todoSeeds: TodoSeed[] = [
-    // Sorting Boxes (unapproved)
-    {
-      choreIndex: 0,
-      name: 'Step 1',
-      description: 'Gather all storage boxes into one area.',
-    },
-    {
-      choreIndex: 0,
-      name: 'Step 2',
-      description: 'Label and stack boxes by category.',
-    },
-    // Sweeping Porch (claimed)
-    {
-      choreIndex: 4,
-      name: 'Get broom & dustpan',
-      description: 'Collect the necessary tools.',
-    },
-    {
-      choreIndex: 4,
-      name: 'Sweep debris',
-      description: 'Sweep all dust into a pile.',
-    },
-    {
-      choreIndex: 4,
-      name: 'Dispose of debris',
-      description: 'Use the dustpan to collect and discard.',
-    },
-  ];
-}
+  )}

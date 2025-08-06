@@ -13,9 +13,9 @@ RUN npm run build     # emits dist/
 RUN apk add --no-cache postgresql-client
 
 # start script
-RUN chmod +x start.sh
+RUN chmod +x start_demo.sh
 
 EXPOSE 4000
 ENV NODE_ENV=production
 
-CMD ["./start.sh"]
+CMD ["./start_demo.sh"]

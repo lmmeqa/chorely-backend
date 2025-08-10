@@ -63,7 +63,6 @@ All endpoints are JSON-only and follow REST conventions.
 | **PATCH** | `/chores/:uuid/approve`      | Approve → status = *unclaimed*       | —                                            | **204**                |
 | **PATCH** | `/chores/:uuid/claim`        | Claim a chore                        | `{ "email": "me@x.com" }`                    | **204**                |
 | **PATCH** | `/chores/:uuid/complete`     | Mark complete (auto-awards dynamic points) | —                                            | **204**                |
-| **PATCH** | `/chores/:uuid/verify`       | Verify (same as complete)            | —                                            | **204**                |
 
 *Errors*
 
@@ -270,6 +269,39 @@ Chores use a dynamic point system that encourages users to claim tasks quickly:
 - **Available Chores**: The `/chores/available/:homeId` endpoint returns chores with current dynamic point values
 - **Individual Chores**: The `/chores/:uuid` endpoint returns the current dynamic point value
 - **Point Calculation**: Uses the `claimed_at` timestamp to determine the exact bonus when the chore was claimed
+
+---
+
+## 14 · Mock vs. Backend Implementation Differences
+
+**⚠️ Important**: The frontend's `mock.ts` file provides a simplified simulation for development. The real backend has more sophisticated behavior that differs in several key ways:
+
+### **Core Behavioral Differences**
+| Feature | Mock Implementation | Real Backend |
+|---------|-------------------|--------------|
+| **Chore Completion** | `completeChoreAPI()` only changes status to "complete" | `complete()` changes status AND automatically awards points to the user |
+| **Point Values** | Always static (e.g., 10 points) | **Dynamic**: increases by 10% every 24 hours unclaimed, up to 100% bonus |
+| **Point Management** | Must manually call `updateUserPointsAPI()` after completion | **Fully automatic** - no manual point calls needed |
+| **Dispute Approval** | Only changes dispute status to "approved" | **Complex workflow**: removes points from user, reverts chore to "claimed", clears completion timestamp |
+| **Chore Reversal** | Not possible - completed chores stay completed | **Disputes can undo** completed chores back to "claimed" status |
+| **Time Tracking** | Basic timestamps in ISO format | **Pacific timezone** with user-friendly formatting (e.g., "2025-08-10T03:15:31") |
+
+
+
+### **Key Backend Features Not in Mock**
+1. **Dynamic Point Calculation** - Points increase over time for unclaimed chores
+2. **Automatic Point Management** - No manual point adding/removing needed
+3. **Chore Status Reversion** - Disputes can undo completed chores
+4. **Pacific Time Handling** - All timestamps in user-friendly Pacific time
+5. **Real-time Data** - No static mock data, all operations affect real database state
+
+### **Migration Path**
+When switching from mock to backend:
+1. **Remove manual point calls** - Backend handles this automatically
+2. **Update dispute handling** - Backend automatically reverts chores
+3. **Handle dynamic points** - UI should display current point values
+4. **Use proper error handling** - Backend provides detailed error messages
+5. **Update timestamp display** - All times are in Pacific timezone
 
 ---
 

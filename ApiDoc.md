@@ -64,6 +64,10 @@ All endpoints are JSON-only and follow REST conventions.
 | **PATCH** | `/chores/:uuid/claim`        | Claim a chore                        | `{ "email": "me@x.com" }`                    | **204**                |
 | **PATCH** | `/chores/:uuid/complete`     | Mark complete (auto-awards dynamic points) | —                                            | **204**                |
 
+> Deprecated
+>
+> - `PATCH /chores/:uuid/verify` is retired. The route exists only to return **410 Gone** with a message to use `PATCH /chores/:uuid/complete` instead.
+
 *Errors*
 
 * `400` – FK violation (bad `home_id` / user not in home)
@@ -139,7 +143,6 @@ Disputes are resolved through a voting system where eligible family members vote
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
 | **GET**  | `/todos`                    | Get all todo items             | —                               | **200** → `TodoItemRow[]`     |
 | **POST** | `/todos`                    | Create a todo item             | `{ name, description, chore_id, order? }` | **201** → `TodoItemRow` |
-
 | **GET**  | `/todos/:id`                | Get todo item by ID            | —                               | **200** → `TodoItemRow`       |
 | **GET**  | `/todos/chore/:choreId`     | Get todo items for chore       | —                               | **200** → `TodoItemRow[]`     |
 | **POST** | `/todos/generate`           | Generate todos using GPT API   | `{ choreName, choreDescription }` | **200** → `GeneratedTodos`   |

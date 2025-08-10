@@ -28,6 +28,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex.raw("SET timezone = 'America/Los_Angeles'");
   
   // clear in FK-safe order
+  await knex("dispute_votes").del().catch(() => {}); // Add dispute_votes cleanup
   await knex("chore_approvals").del().catch(() => {});
   await knex("todo_items").del().catch(() => {});
   await knex("disputes").del().catch(() => {});
@@ -322,4 +323,24 @@ export async function seed(knex: Knex): Promise<void> {
   }));
 
   await knex("disputes").insert(disputeRows);
+
+  /* dispute votes - example voting data */
+  // Get the first dispute for voting examples
+  const firstDispute = disputeRows[0];
+  
+  const disputeVotes = [
+    {
+      dispute_uuid: firstDispute.uuid,
+      user_email: "roommate@example.com", // Jane votes to approve the dispute
+      vote: "approve" as const,
+    },
+    {
+      dispute_uuid: firstDispute.uuid,
+      user_email: "family@example.com", // Mike votes to reject the dispute
+      vote: "reject" as const,
+    },
+    // Note: user@example.com (John) is the disputer, so they don't vote on their own dispute
+  ];
+
+  await knex("dispute_votes").insert(disputeVotes);
 }

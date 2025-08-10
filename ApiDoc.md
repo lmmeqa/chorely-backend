@@ -90,8 +90,26 @@ All endpoints are JSON-only and follow REST conventions.
 | **GET**  | `/disputes`                 | Get disputes                   | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` |
 | **GET**  | `/disputes/:uuid`           | Get dispute by UUID            | —                               | **200** → `DisputeRow`        |
 | **POST** | `/disputes`                 | Create dispute                 | `{ choreId, reason, imageUrl?, disputerEmail }` | **201** → `DisputeRow` |
-| **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (removes points, reverts chore) | —                               | **204**                       |
-| **PATCH**| `/disputes/:uuid/reject`    | Reject dispute                 | —                               | **204**                       |
+
+### Dispute Voting System
+
+Disputes are resolved through a voting system where family members vote to approve or reject the dispute. When 50% or more of family members vote to approve, the dispute is automatically approved and the chore is reverted.
+
+| Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
+| -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
+| **POST** | `/dispute-votes/:disputeUuid/vote` | Vote on dispute            | `{ userEmail, vote }`           | **204**                       |
+| **DELETE**| `/dispute-votes/:disputeUuid/vote` | Remove vote              | `{ userEmail }`                 | **204**                       |
+| **GET**  | `/dispute-votes/:disputeUuid/status` | Get vote status        | —                               | **200** → `DisputeVoteStatus` |
+| **GET**  | `/dispute-votes/:disputeUuid/user/:userEmail` | Get user's vote | —                               | **200** → `{ vote }`          |
+
+**Vote Types:**
+- `"approve"` - Vote to approve the dispute (revert chore completion)
+- `"reject"` - Vote to reject the dispute (keep chore completed)
+
+**Auto-Resolution:**
+- When 50% or more family members vote "approve", the dispute is automatically approved
+- When 50% or more family members vote "reject", the dispute is automatically rejected
+- Approved disputes remove points from the chore assignee and revert the chore to "claimed" status
 
 ---
 
@@ -207,6 +225,21 @@ All endpoints are JSON-only and follow REST conventions.
   votes:     number,    // Current number of votes
   required:  number,    // Required votes for approval
   voters:    string[]   // Array of user emails who voted
+}
+
+// DisputeVoteStatus (from GET /dispute-votes/:disputeUuid/status)
+{
+  dispute_uuid:    string,    // UUID of the dispute
+  approve_votes:   number,    // Number of approve votes
+  reject_votes:    number,    // Number of reject votes
+  total_votes:     number,    // Total number of votes cast
+  required_votes:  number,    // Required votes for resolution (50% of home members)
+  is_approved:     boolean,   // Whether dispute is approved (approve_votes >= required_votes)
+  is_rejected:     boolean,   // Whether dispute is rejected (reject_votes >= required_votes)
+  voters:          {          // Array of voters and their votes
+    user_email:    string,
+    vote:          "approve" | "reject"
+  }[]
 }
 ```
 

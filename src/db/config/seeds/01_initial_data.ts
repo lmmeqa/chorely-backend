@@ -74,6 +74,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "unapproved",
       user_email: null,
       home_id: homeByName["Main House"].id,
+      claimed_at: null,
       completed_at: null,
     },
     {
@@ -85,6 +86,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "unclaimed",
       user_email: null,
       home_id: homeByName["Main House"].id,
+      claimed_at: null,
       completed_at: null,
     },
     {
@@ -96,6 +98,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "unclaimed",
       user_email: null,
       home_id: homeByName["Main House"].id,
+      claimed_at: null,
       completed_at: null,
     },
     {
@@ -107,6 +110,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "unclaimed",
       user_email: null,
       home_id: homeByName["Main House"].id,
+      claimed_at: null,
       completed_at: null,
     },
     {
@@ -118,6 +122,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "unclaimed",
       user_email: null,
       home_id: homeByName["Main House"].id,
+      claimed_at: null,
       completed_at: null,
     },
     {
@@ -129,6 +134,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "claimed",
       user_email: userByEmail["user@example.com"].email,
       home_id: homeByName["Main House"].id,
+      claimed_at: hoursAgo(3), // Claimed 3 hours ago
       completed_at: null,
     },
     {
@@ -140,6 +146,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "claimed",
       user_email: userByEmail["user@example.com"].email,
       home_id: homeByName["Main House"].id,
+      claimed_at: hoursAgo(1), // Claimed 1 hour ago
       completed_at: null,
     },
     {
@@ -151,6 +158,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "complete",
       user_email: userByEmail["user@example.com"].email,
       home_id: homeByName["Summer Cabin"].id,
+      claimed_at: hoursAgo(4), // Claimed 4 hours ago
       completed_at: hoursAgo(2),
     },
     {
@@ -162,6 +170,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "complete",
       user_email: userByEmail["user@example.com"].email,
       home_id: homeByName["Summer Cabin"].id,
+      claimed_at: hoursAgo(3), // Claimed 3 hours ago
       completed_at: hoursAgo(1),
     },
   ];

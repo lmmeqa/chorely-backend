@@ -80,7 +80,7 @@ export const formatTimestampToPacific = (timestamp: string | Date | null): strin
 };
 
 export const formatRowTimestamps = <T extends Record<string, any>>(row: T): T => {
-  const formatted = { ...row };
+  const formatted = { ...row } as any;
   if (formatted.created_at) {
     formatted.created_at = formatTimestampToPacific(formatted.created_at);
   }
@@ -90,21 +90,24 @@ export const formatRowTimestamps = <T extends Record<string, any>>(row: T): T =>
   if (formatted.completed_at) {
     formatted.completed_at = formatTimestampToPacific(formatted.completed_at);
   }
+  if (formatted.claimed_at) {
+    formatted.claimed_at = formatTimestampToPacific(formatted.claimed_at);
+  }
   if (formatted.time) {
     formatted.time = formatTimestampToPacific(formatted.time);
   }
-  return formatted;
+  return formatted as T;
 };
 
 // ────────────────────────────────
 // Base Model Class
 // ────────────────────────────────
 export abstract class BaseModel<T> {
-  protected static async getOrThrow<T>(
+  protected static async getOrThrow<R>(
     table: string, 
     where: Record<string, any>, 
     errorMsg: string
-  ): Promise<T> {
+  ): Promise<R> {
     const row = await db(table).where(where).first();
     if (!row) throw new ModelError("NOT_FOUND", errorMsg, 404);
     return formatRowTimestamps(row);

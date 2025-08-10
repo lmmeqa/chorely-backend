@@ -62,7 +62,7 @@ All endpoints are JSON-only and follow REST conventions.
 | **GET**   | `/chores/user`               | Chores for a user                    | `?email=string&homeId=string`                 | **200** → `ChoreRow[]` |
 | **PATCH** | `/chores/:uuid/approve`      | Approve → status = *unclaimed*       | —                                            | **204**                |
 | **PATCH** | `/chores/:uuid/claim`        | Claim a chore                        | `{ "email": "me@x.com" }`                    | **204**                |
-| **PATCH** | `/chores/:uuid/complete`     | Mark complete                        | —                                            | **204**                |
+| **PATCH** | `/chores/:uuid/complete`     | Mark complete (auto-awards dynamic points) | —                                            | **204**                |
 | **PATCH** | `/chores/:uuid/verify`       | Verify (same as complete)            | —                                            | **204**                |
 
 *Errors*
@@ -90,7 +90,7 @@ All endpoints are JSON-only and follow REST conventions.
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
 | **GET**  | `/disputes`                 | Get disputes                   | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` |
 | **POST** | `/disputes`                 | Create dispute                 | `{ choreId, reason, imageUrl?, disputerEmail }` | **201** → `DisputeRow` |
-| **PATCH**| `/disputes/:uuid/approve`   | Approve dispute                | —                               | **204**                       |
+| **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (removes points, reverts chore) | —                               | **204**                       |
 | **PATCH**| `/disputes/:uuid/reject`    | Reject dispute                 | —                               | **204**                       |
 
 ---
@@ -151,8 +151,9 @@ All endpoints are JSON-only and follow REST conventions.
   user_email:    string | null,
   status:        "unapproved" | "unclaimed" | "claimed" | "complete",
   home_id:       string,
-  points:        number,
+  points:        number,        // Base points value (see Dynamic Points section)
   completed_at:  string | null, // Pacific time (YYYY-MM-DDTHH:mm:ss)
+  claimed_at:    string | null, // Pacific time (YYYY-MM-DDTHH:mm:ss) - when chore was claimed
   created_at?:   string,        // Pacific time (YYYY-MM-DDTHH:mm:ss)
   updated_at?:   string         // Pacific time (YYYY-MM-DDTHH:mm:ss)
 }
@@ -232,7 +233,34 @@ All timestamps in API responses are returned in **Pacific time** using the forma
 - `created_at`
 - `updated_at` 
 - `completed_at`
+- `claimed_at`
 - `time` (chore due dates)
+
+---
+
+## 13 · Dynamic Point System
+
+Chores use a dynamic point system that encourages users to claim tasks quickly:
+
+### **How it works:**
+- **Base Points**: Each chore has a base point value stored in the database
+- **Time Bonus**: Unclaimed chores get a bonus based on how long they've been unclaimed
+- **Calculation**: Points increase by 10% every 24 hours, capped at 100% increase (double points)
+- **Formula**: `final_points = base_points * (1 + (hours_unclaimed / 24) * 0.1)`, max 2.0x multiplier
+
+### **Examples:**
+- A 100-point chore unclaimed for 24 hours = 110 points
+- A 100-point chore unclaimed for 48 hours = 120 points  
+- A 100-point chore unclaimed for 240 hours (10 days) = 200 points (maximum)
+
+### **When points are awarded:**
+- **Chore Completion**: Users receive the dynamic points based on when they claimed the chore
+- **Dispute Approval**: If a dispute is approved, the dynamic points are removed from the user and the chore status reverts to "claimed"
+
+### **API Behavior:**
+- **Available Chores**: The `/chores/available/:homeId` endpoint returns chores with current dynamic point values
+- **Individual Chores**: The `/chores/:uuid` endpoint returns the current dynamic point value
+- **Point Calculation**: Uses the `claimed_at` timestamp to determine the exact bonus when the chore was claimed
 
 ---
 

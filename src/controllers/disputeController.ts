@@ -28,6 +28,8 @@ export const create = controller(async (req, res) => {
   res.status(201).json(row);
 });
 
+
+
 export const approve = controller(async (req, res) => {
   await Dispute.setStatus(req.params.uuid, "approved");
   res.status(204).end();
@@ -37,3 +39,6 @@ export const reject = controller(async (req, res) => {
   await Dispute.setStatus(req.params.uuid, "rejected");
   res.status(204).end();
 });
+
+// Note: approve and reject methods have been removed
+// Disputes are now handled through the voting system at /dispute-votes endpoints

@@ -16,6 +16,7 @@ export async function up(knex: Knex): Promise<void> {
   
   // 🔥 Always start clean: drop known tables if they exist (child → parent + legacy names)
   const drops = [
+    "dispute_votes",  // Drop child table first
     "disputes",
     "chore_approvals",
     "todo_items",
@@ -105,6 +106,9 @@ export async function up(knex: Knex): Promise<void> {
     t.string("name").notNullable();
     t.text("description").notNullable();
     t.integer("order").notNullable().defaultTo(0);
+    
+    // Ensure no two todos for the same chore can have the same order
+    t.unique(["chore_id", "order"]);
   });
 
   /* chore_approvals (email-based FK) */
@@ -146,10 +150,31 @@ export async function up(knex: Knex): Promise<void> {
     t.index(["chore_id"]);
     t.index(["disputer_email"]);
   });
+
+
+  /* chore_approvals (email-based FK) */// Create dispute_votes table for voting on disputes
+  await knex.schema.createTable("dispute_votes", (t) => {
+    t.uuid("dispute_uuid")
+      .notNullable()
+      .references("uuid")
+      .inTable("disputes")
+      .onDelete("CASCADE");
+    t.string("user_email")
+      .notNullable()
+      .references("email")
+      .inTable("users")
+      .onDelete("CASCADE");
+    t.specificType("vote", "vote_type").notNullable(); // 'approve' or 'reject'
+    t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.primary(["dispute_uuid", "user_email"]);
+    t.index(["dispute_uuid"]);
+    t.index(["user_email"]);
+  });
 }
 
 export async function down(knex: Knex): Promise<void> {
   // Also destructive on down for symmetry
+  await knex.schema.dropTableIfExists("dispute_votes");  // Drop child table first
   await knex.schema.dropTableIfExists("disputes");
   await knex.schema.dropTableIfExists("chore_approvals");
   await knex.schema.dropTableIfExists("todo_items");

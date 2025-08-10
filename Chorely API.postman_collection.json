@@ -1,0 +1,4216 @@
+{
+	"info": {
+		"_postman_id": "5778f8ca-539d-47c1-b780-480e62942357",
+		"name": "Chorely API",
+		"description": "Complete API collection for testing Chorely backend endpoints with useful flows",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19704779",
+		"_collection_link": "https://chorely.postman.co/workspace/chorely-Workspace~d96c0e4a-b04e-4c41-9f03-57e906439324/collection/19704779-5778f8ca-539d-47c1-b780-480e62942357?action=share&source=collection_link&creator=19704779"
+	},
+	"item": [
+		{
+			"name": "🚀 Quick Start Flow",
+			"item": [
+				{
+					"name": "1. Create Home",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('home_id', response.id);",
+									"    console.log('Home created with ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{home_name}}\",\n  \"weekly_point_quota\": {{home_quota}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "1. Create Home",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"{{home_name}}\",\n  \"weekly_point_quota\": {{home_quota}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/homes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"homes"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "159"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"9f-DyHI7II64ask7juAlfu0KAYgcME\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:23:36 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"0299ea02-2df1-45ac-95bf-c445c55dae13\",\n    \"name\": \"Test Home\",\n    \"weekly_point_quota\": 100,\n    \"created_at\": \"2025-08-09T23:23:36\",\n    \"updated_at\": \"2025-08-09T23:23:36\"\n}"
+						}
+					]
+				},
+				{
+					"name": "2. Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeIds\": [\"{{home_id}}\"],\n  \"name\": \"{{user_name}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "2. Create User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeIds\": [\"{{home_id}}\"],\n  \"name\": \"{{user_name}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/user",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "117"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"75-ZNPc7S4Jpz7rjTJBNXs+zmPw94M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:23:44 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"created_at\": \"2025-08-09T23:15:00\",\n    \"updated_at\": \"2025-08-09T23:15:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "3. Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"login"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "3. Login User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/user/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "117"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"75-ZNPc7S4Jpz7rjTJBNXs+zmPw94M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:23:47 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"created_at\": \"2025-08-09T23:15:00\",\n    \"updated_at\": \"2025-08-09T23:15:00\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🏠 Homes",
+			"item": [
+				{
+					"name": "Create Home",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('home_id', response.id);",
+									"    console.log('Home created with ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{home_name}}\",\n  \"weeklyPointQuota\": {{home_quota}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Create Home",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"{{home_name}}\",\n  \"weeklyPointQuota\": {{home_quota}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/homes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"homes"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "159"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"9f-l6z4G2gC7SV2KuekcQsGZGzBwKY\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:23:50 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n    \"name\": \"Test Home\",\n    \"weekly_point_quota\": 100,\n    \"created_at\": \"2025-08-09T23:23:50\",\n    \"updated_at\": \"2025-08-09T23:23:50\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Homes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get All Homes",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/homes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"homes"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1774"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"6ee-zj95qLTfVhZ9w8Ro6mvsqoMjfBs\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:23:56 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"521f6918-c13a-4bae-a3de-7b446fff1589\",\n        \"name\": \"Downtown Apartment\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-10T06:14:38\",\n        \"updated_at\": \"2025-08-10T06:14:38\"\n    },\n    {\n        \"id\": \"b71c92bd-cd76-48d9-a73f-84d322dbf6db\",\n        \"name\": \"Main House\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-10T06:14:38\",\n        \"updated_at\": \"2025-08-10T06:14:38\"\n    },\n    {\n        \"id\": \"5e4f35ea-b2f8-444f-86ee-a684f86d1a5e\",\n        \"name\": \"Summer Cabin\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-10T06:14:38\",\n        \"updated_at\": \"2025-08-10T06:14:38\"\n    },\n    {\n        \"id\": \"ddf562fc-97e2-44b8-99c2-5caa0676997e\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:15:13\",\n        \"updated_at\": \"2025-08-09T23:15:13\"\n    },\n    {\n        \"id\": \"ad357ccc-15d2-45d7-a7b7-e9885178f29c\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:15:14\",\n        \"updated_at\": \"2025-08-09T23:15:14\"\n    },\n    {\n        \"id\": \"08089f16-f7b9-4687-a652-4f6b80c1cf97\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:22:55\",\n        \"updated_at\": \"2025-08-09T23:22:55\"\n    },\n    {\n        \"id\": \"d7256c63-7368-455d-8dc5-872887228f9b\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:22:55\",\n        \"updated_at\": \"2025-08-09T23:22:55\"\n    },\n    {\n        \"id\": \"0299ea02-2df1-45ac-95bf-c445c55dae13\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:23:36\",\n        \"updated_at\": \"2025-08-09T23:23:36\"\n    },\n    {\n        \"id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:23:50\",\n        \"updated_at\": \"2025-08-09T23:23:50\"\n    },\n    {\n        \"id\": \"c7e59aa8-cb7e-42f5-a847-70b32e2bd4ff\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:14:55\",\n        \"updated_at\": \"2025-08-09T23:14:55\"\n    },\n    {\n        \"id\": \"3e860854-298d-4e36-a616-342b03a3eae5\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:15:00\",\n        \"updated_at\": \"2025-08-09T23:15:00\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Get Home by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/homes/{{home_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes",
+								"{{home_id}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Home by ID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/homes/{{home_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"homes",
+										"{{home_id}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "169"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"a9-9+wDtxwYR4cfNCU66BW1e1yMwIM\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:23:59 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n    \"name\": \"Test Home\",\n    \"weekly_point_quota\": 100,\n    \"created_at\": \"2025-08-10T06:23:50.903Z\",\n    \"updated_at\": \"2025-08-10T06:23:50.903Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Home Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/homes/{{home_id}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes",
+								"{{home_id}}",
+								"users"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Home Users",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/homes/{{home_id}}/users",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"homes",
+										"{{home_id}}",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "2"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:24:03 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[]"
+						}
+					]
+				},
+				{
+					"name": "Update Home Quota",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weeklyPointQuota\": {{home_quota}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes/{{home_id}}/quota",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes",
+								"{{home_id}}",
+								"quota"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Update Home Quota",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"weeklyPointQuota\": {{home_quota}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/homes/{{home_id}}/quota",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"homes",
+										"{{home_id}}",
+										"quota"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "24"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"18-9y86iOK6keElBbRWiPtag8ASRyg\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:24:06 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"weeklyPointQuota\": 100\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "👤 Users",
+			"item": [
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeIds\": [\"{{home_id}}\"],\n  \"name\": \"{{user_name}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Create User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeIds\": [\"{{home_id}}\"],\n  \"name\": \"{{user_name}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/user",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "117"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"75-ZNPc7S4Jpz7rjTJBNXs+zmPw94M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:21 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"created_at\": \"2025-08-09T23:15:00\",\n    \"updated_at\": \"2025-08-09T23:15:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"login"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Login User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/user/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "117"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"75-ZNPc7S4Jpz7rjTJBNXs+zmPw94M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:24 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"created_at\": \"2025-08-09T23:15:00\",\n    \"updated_at\": \"2025-08-09T23:15:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get User by Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/user/{{user_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"{{user_email}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get User by Email",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/user/{{user_email}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user",
+										"{{user_email}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "117"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"75-ZNPc7S4Jpz7rjTJBNXs+zmPw94M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:27 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"created_at\": \"2025-08-09T23:15:00\",\n    \"updated_at\": \"2025-08-09T23:15:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get User Homes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/user/{{user_email}}/home",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"{{user_email}}",
+								"home"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get User Homes",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/user/{{user_email}}/home",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user",
+										"{{user_email}}",
+										"home"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1121"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"461-N9sq8UkvzfIFlSJJA7o/X6NZk2o\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:31 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"0299ea02-2df1-45ac-95bf-c445c55dae13\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:23:36\",\n        \"updated_at\": \"2025-08-09T23:23:36\"\n    },\n    {\n        \"id\": \"08089f16-f7b9-4687-a652-4f6b80c1cf97\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:22:55\",\n        \"updated_at\": \"2025-08-09T23:22:55\"\n    },\n    {\n        \"id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:23:50\",\n        \"updated_at\": \"2025-08-09T23:23:50\"\n    },\n    {\n        \"id\": \"3e860854-298d-4e36-a616-342b03a3eae5\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:15:00\",\n        \"updated_at\": \"2025-08-09T23:15:00\"\n    },\n    {\n        \"id\": \"ad357ccc-15d2-45d7-a7b7-e9885178f29c\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:15:14\",\n        \"updated_at\": \"2025-08-09T23:15:14\"\n    },\n    {\n        \"id\": \"d7256c63-7368-455d-8dc5-872887228f9b\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:22:55\",\n        \"updated_at\": \"2025-08-09T23:22:55\"\n    },\n    {\n        \"id\": \"ddf562fc-97e2-44b8-99c2-5caa0676997e\",\n        \"name\": \"Test Home\",\n        \"weekly_point_quota\": 100,\n        \"created_at\": \"2025-08-09T23:15:13\",\n        \"updated_at\": \"2025-08-09T23:15:13\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Join Home",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeId\": \"{{home_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/join",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"join"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Join Home",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeId\": \"{{home_id}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/user/join",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"user",
+										"join"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:35 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🧹 Chores",
+			"item": [
+				{
+					"name": "Create Chore",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('chore_uuid', response.uuid);",
+									"    console.log('Chore created with UUID:', response.uuid);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{chore_name}}\",\n  \"description\": \"{{chore_description}}\",\n  \"time\": \"{{chore_time}}\",\n  \"icon\": \"{{chore_icon}}\",\n  \"home_id\": \"{{home_id}}\",\n  \"points\": {{chore_points}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Create Chore",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"{{chore_name}}\",\n  \"description\": \"{{chore_description}}\",\n  \"time\": \"{{chore_time}}\",\n  \"icon\": \"{{chore_icon}}\",\n  \"home_id\": \"{{home_id}}\",\n  \"points\": {{chore_points}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/chores",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "372"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"174-H7wyR6DJ/xOQd+ymJzr5WscKy6Q\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:42 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"uuid\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n    \"name\": \"Test Chore\",\n    \"description\": \"This is a test chore for API testing\",\n    \"time\": \"2024-01-15T02:00:00\",\n    \"icon\": \"🧹\",\n    \"status\": \"unapproved\",\n    \"user_email\": null,\n    \"home_id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n    \"points\": 10,\n    \"completed_at\": null,\n    \"claimed_at\": null,\n    \"created_at\": \"2025-08-09T23:25:42\",\n    \"updated_at\": \"2025-08-09T23:25:42\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Chore by UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{chore_uuid}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Chore by UUID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/chores/{{chore_uuid}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"{{chore_uuid}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "372"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"174-H7wyR6DJ/xOQd+ymJzr5WscKy6Q\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:25:46 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"uuid\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n    \"name\": \"Test Chore\",\n    \"description\": \"This is a test chore for API testing\",\n    \"time\": \"2024-01-15T02:00:00\",\n    \"icon\": \"🧹\",\n    \"status\": \"unapproved\",\n    \"user_email\": null,\n    \"home_id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n    \"points\": 10,\n    \"completed_at\": null,\n    \"claimed_at\": null,\n    \"created_at\": \"2025-08-09T23:25:42\",\n    \"updated_at\": \"2025-08-09T23:25:42\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Available Chores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/available/{{home_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"available",
+								"{{home_id}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Available Chores",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/chores/available/{{home_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"available",
+										"{{home_id}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "2"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:26:02 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[]"
+						}
+					]
+				},
+				{
+					"name": "Get Unapproved Chores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/unapproved/{{home_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"unapproved",
+								"{{home_id}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Unapproved Chores",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/chores/unapproved/{{home_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"unapproved",
+										"{{home_id}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "374"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"176-1a+WCfs7Z45zP+GYdcpxF7/58RI\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:26:16 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"uuid\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n        \"name\": \"Test Chore\",\n        \"description\": \"This is a test chore for API testing\",\n        \"time\": \"2024-01-15T02:00:00\",\n        \"icon\": \"🧹\",\n        \"status\": \"unapproved\",\n        \"user_email\": null,\n        \"home_id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n        \"points\": 10,\n        \"completed_at\": null,\n        \"claimed_at\": null,\n        \"created_at\": \"2025-08-09T23:25:42\",\n        \"updated_at\": \"2025-08-09T23:25:42\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Get User Chores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/user?email={{user_email}}&homeId={{home_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"user"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "{{user_email}}"
+								},
+								{
+									"key": "homeId",
+									"value": "{{home_id}}"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get User Chores",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/chores/user?email={{user_email}}&homeId={{home_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"user"
+									],
+									"query": [
+										{
+											"key": "email",
+											"value": "{{user_email}}"
+										},
+										{
+											"key": "homeId",
+											"value": "{{home_id}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "2"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:26:21 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[]"
+						}
+					]
+				},
+				{
+					"name": "Approve Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{chore_uuid}}",
+								"approve"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Approve Chore",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/chores/{{chore_uuid}}/approve",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"{{chore_uuid}}",
+										"approve"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:26:26 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "Claim Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}/claim",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{chore_uuid}}",
+								"claim"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Claim Chore",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/chores/{{chore_uuid}}/claim",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"{{chore_uuid}}",
+										"claim"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:26:31 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "Complete Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}/complete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{chore_uuid}}",
+								"complete"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Complete Chore",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/chores/{{chore_uuid}}/complete",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"chores",
+										"{{chore_uuid}}",
+										"complete"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:26:35 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "✅ Approvals",
+			"item": [
+				{
+					"name": "Get Approval Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/approvals/{{chore_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"{{chore_uuid}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Approval Status",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/approvals/{{chore_uuid}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"approvals",
+										"{{chore_uuid}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "56"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"38-D42ED9jTk9e9bVXo4rkAxZVq4Wk\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:01 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"status\": \"complete\",\n    \"voters\": [],\n    \"votes\": 0,\n    \"required\": 1\n}"
+						}
+					]
+				},
+				{
+					"name": "Vote for Chore",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userEmail\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/approvals/{{chore_uuid}}/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"{{chore_uuid}}",
+								"vote"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Vote for Chore",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userEmail\": \"{{user_email}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/approvals/{{chore_uuid}}/vote",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"approvals",
+										"{{chore_uuid}}",
+										"vote"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "70"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"46-L+lAMUmFQtBZyEtXoay/0uDa+jw\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:08 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"approved\": true,\n    \"votes\": 1,\n    \"required\": 1,\n    \"voters\": [\n        \"test@example.com\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Remove Vote",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userEmail\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/approvals/{{chore_uuid}}/unvote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"{{chore_uuid}}",
+								"unvote"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Remove Vote",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userEmail\": \"{{user_email}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/approvals/{{chore_uuid}}/unvote",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"approvals",
+										"{{chore_uuid}}",
+										"unvote"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "53"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"35-jM9Tf9oVXFxRGaH3Q7LSWmvPCWk\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:12 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"approved\": false,\n    \"votes\": 0,\n    \"required\": 1,\n    \"voters\": []\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "💰 Points",
+			"item": [
+				{
+					"name": "Get All Points in Home",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"points",
+								"{{home_id}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get All Points in Home",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/points/{{home_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"points",
+										"{{home_id}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "96"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"60-px98n0Ru/CDtfT/NnzFzTIt1LK4\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:25 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"user_email\": \"test@example.com\",\n        \"home_id\": \"19f1809a-49b5-4135-be27-4d1f44cf1dfb\",\n        \"points\": 10\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Get User Points",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"points",
+								"{{home_id}}",
+								"{{user_email}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get User Points",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"points",
+										"{{home_id}}",
+										"{{user_email}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "13"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"d-I6oFioqvLKCCvnIFcteOslsUpPY\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:31 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"points\": 10\n}"
+						}
+					]
+				},
+				{
+					"name": "Add Points to User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"delta\": {{points_delta}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"points",
+								"{{home_id}}",
+								"{{user_email}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Add Points to User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"delta\": {{points_delta}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"points",
+										"{{home_id}}",
+										"{{user_email}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "13"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"d-1Y4qisCzOfotm3cJBjmkx2VWXT0\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:36 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"points\": 60\n}"
+						}
+					]
+				},
+				{
+					"name": "Remove Points from User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"delta\": -{{points_delta}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"points",
+								"{{home_id}}",
+								"{{user_email}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Remove Points from User",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"delta\": -{{points_delta}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"points",
+										"{{home_id}}",
+										"{{user_email}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "13"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"d-I6oFioqvLKCCvnIFcteOslsUpPY\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:41 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"points\": 10\n}"
+						}
+					]
+				},
+				{
+					"name": "Update User Points",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"points\": {{points_delta}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"points",
+								"{{home_id}}",
+								"{{user_email}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Update User Points",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"points\": {{points_delta}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"points",
+										"{{home_id}}",
+										"{{user_email}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "13"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"d-1Y4qisCzOfotm3cJBjmkx2VWXT0\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:27:48 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"points\": 60\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "⚖️ Disputes",
+			"item": [
+				{
+					"name": "Create Dispute",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('dispute_uuid', response.uuid);",
+									"    console.log('Dispute created with UUID:', response.uuid);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreId\": \"{{chore_uuid}}\",\n  \"disputerEmail\": \"{{user_email}}\",\n  \"reason\": \"{{dispute_reason}}\",\n  \"imageUrl\": \"{{dispute_image_url}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/disputes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Create Dispute",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"choreId\": \"{{chore_uuid}}\",\n  \"disputerEmail\": \"{{user_email}}\",\n  \"reason\": \"{{dispute_reason}}\",\n  \"imageUrl\": \"{{dispute_image_url}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/disputes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"disputes"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "320"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"140-rVXf0r7WhefhHdtsgMTtdI0dhPo\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:05 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"uuid\": \"059e8433-1c80-448b-9751-ae2a348b6a03\",\n    \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n    \"disputer_email\": \"test@example.com\",\n    \"reason\": \"Chore was not completed properly\",\n    \"image_url\": \"https://example.com/image.jpg\",\n    \"status\": \"pending\",\n    \"created_at\": \"2025-08-10T06:28:05.366Z\",\n    \"updated_at\": \"2025-08-10T06:28:05.366Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Dispute by UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes",
+								"{{dispute_uuid}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Dispute by UUID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/disputes/{{dispute_uuid}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"disputes",
+										"{{dispute_uuid}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "310"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"136-sbNoZ2fdYp8s6Tdpg3kwVodqbpw\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:11 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"uuid\": \"059e8433-1c80-448b-9751-ae2a348b6a03\",\n    \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n    \"disputer_email\": \"test@example.com\",\n    \"reason\": \"Chore was not completed properly\",\n    \"image_url\": \"https://example.com/image.jpg\",\n    \"status\": \"pending\",\n    \"created_at\": \"2025-08-09T23:28:05\",\n    \"updated_at\": \"2025-08-09T23:28:05\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Disputes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get All Disputes",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/disputes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"disputes"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "2176"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"880-sKSHNjYc6ZKKAOvIjVOXuCuszh0\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:17 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"uuid\": \"059e8433-1c80-448b-9751-ae2a348b6a03\",\n        \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n        \"disputer_email\": \"test@example.com\",\n        \"reason\": \"Chore was not completed properly\",\n        \"image_url\": \"https://example.com/image.jpg\",\n        \"status\": \"pending\",\n        \"created_at\": \"2025-08-10T06:28:05.366Z\",\n        \"updated_at\": \"2025-08-10T06:28:05.366Z\"\n    },\n    {\n        \"uuid\": \"ac6d5c85-92a0-4b83-822a-83d7e7552422\",\n        \"chore_id\": \"5fa98807-2362-4ff4-81db-65b0b3f76bc2\",\n        \"disputer_email\": \"test@example.com\",\n        \"reason\": \"Chore was not completed properly\",\n        \"image_url\": \"https://example.com/image.jpg\",\n        \"status\": \"approved\",\n        \"created_at\": \"2025-08-10T06:22:56.478Z\",\n        \"updated_at\": \"2025-08-10T13:22:56.494Z\"\n    },\n    {\n        \"uuid\": \"c35a88ab-5ed4-42f3-a292-0e513f3a2ef9\",\n        \"chore_id\": \"5496b274-524b-481a-8577-0f699c06701c\",\n        \"disputer_email\": \"test@example.com\",\n        \"reason\": \"Chore was not completed properly\",\n        \"image_url\": \"https://example.com/image.jpg\",\n        \"status\": \"rejected\",\n        \"created_at\": \"2025-08-10T06:22:56.286Z\",\n        \"updated_at\": \"2025-08-10T13:22:56.343Z\"\n    },\n    {\n        \"uuid\": \"c28ccfb8-09b7-41dd-8ec5-56a5b5d12214\",\n        \"chore_id\": \"61a78c66-33be-4d70-b4b0-ef1fe239a1bf\",\n        \"disputer_email\": \"test@example.com\",\n        \"reason\": \"Chore was not completed properly\",\n        \"image_url\": \"https://example.com/image.jpg\",\n        \"status\": \"approved\",\n        \"created_at\": \"2025-08-10T06:15:14.607Z\",\n        \"updated_at\": \"2025-08-10T13:15:14.622Z\"\n    },\n    {\n        \"uuid\": \"3077f219-88ce-4d77-bb41-eaba14a17a14\",\n        \"chore_id\": \"b7235855-f697-4b00-a0e1-81796a039fca\",\n        \"disputer_email\": \"test@example.com\",\n        \"reason\": \"Chore was not completed properly\",\n        \"image_url\": \"https://example.com/image.jpg\",\n        \"status\": \"rejected\",\n        \"created_at\": \"2025-08-10T06:15:14.406Z\",\n        \"updated_at\": \"2025-08-10T13:15:14.464Z\"\n    },\n    {\n        \"uuid\": \"4afe9bba-d86c-4fb6-908a-8e53234585f0\",\n        \"chore_id\": \"f4396521-f5f7-473f-893a-87f8f311d115\",\n        \"disputer_email\": \"user@example.com\",\n        \"reason\": \"Not cleaned properly\",\n        \"image_url\": null,\n        \"status\": \"pending\",\n        \"created_at\": \"2024-01-15T10:30:00.000Z\",\n        \"updated_at\": \"2025-08-10T13:14:38.564Z\"\n    },\n    {\n        \"uuid\": \"1800a326-4c54-453c-8111-1c2651a43c91\",\n        \"chore_id\": \"f4396521-f5f7-473f-893a-87f8f311d115\",\n        \"disputer_email\": \"roommate@example.com\",\n        \"reason\": \"Incomplete dusting\",\n        \"image_url\": null,\n        \"status\": \"pending\",\n        \"created_at\": \"2024-01-14T15:45:00.000Z\",\n        \"updated_at\": \"2025-08-10T13:14:38.564Z\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Approve Dispute",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes",
+								"{{dispute_uuid}}",
+								"approve"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Approve Dispute",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/disputes/{{dispute_uuid}}/approve",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"disputes",
+										"{{dispute_uuid}}",
+										"approve"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:22 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "Reject Dispute",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/reject",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes",
+								"{{dispute_uuid}}",
+								"reject"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Reject Dispute",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/disputes/{{dispute_uuid}}/reject",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"disputes",
+										"{{dispute_uuid}}",
+										"reject"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:28 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📝 Todos",
+			"item": [
+				{
+					"name": "Create Todo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('todo_uuid', response.id);",
+									"    console.log('Todo created with ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{todo_title}}\",\n  \"description\": \"{{todo_description}}\",\n  \"chore_id\": \"{{chore_uuid}}\",\n  \"order\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Create Todo",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"{{todo_title}}\",\n  \"description\": \"{{todo_description}}\",\n  \"chore_id\": \"{{chore_uuid}}\",\n  \"order\": 0\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/todos",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"todos"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "165"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"a5-Uf6BHAAfyoRSmrbnVO3vj7tBq2M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:37 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"5e06d2db-9bf9-4280-80bc-d2ef86ea1973\",\n    \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n    \"name\": \"Test Todo\",\n    \"description\": \"This is a test todo item\",\n    \"order\": 0\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Todo by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos/{{todo_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"{{todo_uuid}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Todo by ID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/todos/{{todo_uuid}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"todos",
+										"{{todo_uuid}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "165"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"a5-Uf6BHAAfyoRSmrbnVO3vj7tBq2M\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:47 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"5e06d2db-9bf9-4280-80bc-d2ef86ea1973\",\n    \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n    \"name\": \"Test Todo\",\n    \"description\": \"This is a test todo item\",\n    \"order\": 0\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Todos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get All Todos",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/todos",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"todos"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "6051"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"17a3-tUytATCO6F5ago1OX3TYvg6Uo/8\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:28:53 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"5e06d2db-9bf9-4280-80bc-d2ef86ea1973\",\n        \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n        \"name\": \"Test Todo\",\n        \"description\": \"This is a test todo item\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"a8c87d86-8698-4009-b57d-a1227214146f\",\n        \"chore_id\": \"55c98632-091e-4240-ae16-2fa434ad51e7\",\n        \"name\": \"Clear shelves\",\n        \"description\": \"Remove all items from the shelves.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"8eab9bac-a77d-4a08-adb0-a8de12ade545\",\n        \"chore_id\": \"f4396521-f5f7-473f-893a-87f8f311d115\",\n        \"name\": \"Gather supplies\",\n        \"description\": \"Get a duster or microfiber cloth.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"f158f4e8-477d-4d33-a88d-3611876ce7dc\",\n        \"chore_id\": \"53742fa7-b8df-468a-9244-c06cbcc69c90\",\n        \"name\": \"Sweep/vacuum first\",\n        \"description\": \"Remove loose dirt and debris.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"e6597e59-c9aa-46cf-908b-448829db6c70\",\n        \"chore_id\": \"c4981436-5f60-46e6-b990-7777e919aad5\",\n        \"name\": \"Collect trash\",\n        \"description\": \"Gather trash from all bins in the house.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"756c1462-6ecc-4dda-a8a0-761c3c6d96c4\",\n        \"chore_id\": \"a7239274-ff9d-4b01-bb15-fc1262f00db7\",\n        \"name\": \"Get broom and dustpan\",\n        \"description\": \"Grab the necessary tools.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"6b99182d-e484-4ffb-8312-0b1a10cda951\",\n        \"chore_id\": \"df0dec86-6a94-4e0d-8f24-6e35cad83f3c\",\n        \"name\": \"Scrape plates\",\n        \"description\": \"Remove leftover food from dishes.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"022247b7-518b-4acb-8ffb-a764be612784\",\n        \"chore_id\": \"e78d6e65-a626-48dd-a63a-3ea255371b25\",\n        \"name\": \"Clear the floor\",\n        \"description\": \"Pick up any large items or clutter from the floor.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"b21faba5-f8dd-4f8a-8159-3e3c483a9e26\",\n        \"chore_id\": \"4a6fb496-2cce-4f2a-8392-aaca8779d392\",\n        \"name\": \"Sort clothes\",\n        \"description\": \"Separate lights, darks, and colors.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"1c2ddce8-1541-469f-88f3-9a0d3e8db772\",\n        \"chore_id\": \"b7235855-f697-4b00-a0e1-81796a039fca\",\n        \"name\": \"Test Todo\",\n        \"description\": \"This is a test todo item\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"587745c2-0d32-440b-85dc-582cfb509c5b\",\n        \"chore_id\": \"5496b274-524b-481a-8577-0f699c06701c\",\n        \"name\": \"Test Todo\",\n        \"description\": \"This is a test todo item\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"e450cdcd-b739-4f66-86ae-cd873c10f84f\",\n        \"chore_id\": \"df581c34-c0a3-4237-a46a-d88edf044812\",\n        \"name\": \"Step 1\",\n        \"description\": \"Detailed description for step 1.\",\n        \"order\": 0\n    },\n    {\n        \"id\": \"74f2b3db-9c26-4d4b-a577-800ee8f19e03\",\n        \"chore_id\": \"53742fa7-b8df-468a-9244-c06cbcc69c90\",\n        \"name\": \"Prepare mop solution\",\n        \"description\": \"Fill a bucket with water and cleaning solution.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"8f8dfebc-d81e-44f9-b56a-23468d41b7c6\",\n        \"chore_id\": \"df581c34-c0a3-4237-a46a-d88edf044812\",\n        \"name\": \"Step 2\",\n        \"description\": \"Detailed description for step 2.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"d2a808ba-7c2b-47d1-8ec0-de4f74b82a39\",\n        \"chore_id\": \"e78d6e65-a626-48dd-a63a-3ea255371b25\",\n        \"name\": \"Vacuum room by room\",\n        \"description\": \"Work systematically through the house.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"cc6c6ad8-284b-49be-99d1-3f0ae2623242\",\n        \"chore_id\": \"55c98632-091e-4240-ae16-2fa434ad51e7\",\n        \"name\": \"Sort items\",\n        \"description\": \"Group items into categories: keep, donate, trash.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"668bcc44-c680-42a3-afcd-2898581af41e\",\n        \"chore_id\": \"a7239274-ff9d-4b01-bb15-fc1262f00db7\",\n        \"name\": \"Sweep into a pile\",\n        \"description\": \"Sweep all debris into one area.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"d197faec-52e2-4242-93e1-3aa24773ca50\",\n        \"chore_id\": \"f4396521-f5f7-473f-893a-87f8f311d115\",\n        \"name\": \"Dust high surfaces\",\n        \"description\": \"Start from top to bottom.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"99396925-1bbd-4ae7-bb25-9aeb4a95538f\",\n        \"chore_id\": \"c4981436-5f60-46e6-b990-7777e919aad5\",\n        \"name\": \"Replace liners\",\n        \"description\": \"Put new liners in all the trash cans.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"6582ab2b-c9d4-4413-b30e-b62b39ab940b\",\n        \"chore_id\": \"4a6fb496-2cce-4f2a-8392-aaca8779d392\",\n        \"name\": \"Wash load\",\n        \"description\": \"Put one load in the washing machine with detergent.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"71c9566f-ea40-49c4-81aa-ed649953237e\",\n        \"chore_id\": \"df0dec86-6a94-4e0d-8f24-6e35cad83f3c\",\n        \"name\": \"Wash with soap\",\n        \"description\": \"Use hot, soapy water to wash each dish.\",\n        \"order\": 1\n    },\n    {\n        \"id\": \"718f9f85-5fc5-4d2b-babe-44568e6e8e82\",\n        \"chore_id\": \"53742fa7-b8df-468a-9244-c06cbcc69c90\",\n        \"name\": \"Mop the floors\",\n        \"description\": \"Mop from the farthest corner towards the door.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"49be2776-202d-4c02-b72d-9763115c5ae8\",\n        \"chore_id\": \"e78d6e65-a626-48dd-a63a-3ea255371b25\",\n        \"name\": \"Use attachments\",\n        \"description\": \"Use attachments for corners and edges.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"f2321c86-1feb-43a7-8122-7d2892e395e1\",\n        \"chore_id\": \"c4981436-5f60-46e6-b990-7777e919aad5\",\n        \"name\": \"Take out to curb\",\n        \"description\": \"Take the main trash bag to the outdoor bin/curb.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"4639b0f7-465d-44fe-b045-6b26fd3bad91\",\n        \"chore_id\": \"a7239274-ff9d-4b01-bb15-fc1262f00db7\",\n        \"name\": \"Dispose of debris\",\n        \"description\": \"Use the dustpan to collect and throw away the pile.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"f50b9bb0-63b1-432f-af57-95b40a52be56\",\n        \"chore_id\": \"df0dec86-6a94-4e0d-8f24-6e35cad83f3c\",\n        \"name\": \"Rinse thoroughly\",\n        \"description\": \"Rinse off all soap suds.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"522dbb5c-051d-499a-847b-4205090014f0\",\n        \"chore_id\": \"55c98632-091e-4240-ae16-2fa434ad51e7\",\n        \"name\": \"Wipe shelves\",\n        \"description\": \"Clean the shelves with a damp cloth.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"b04d1398-d980-4024-b2c1-f437faba36bf\",\n        \"chore_id\": \"4a6fb496-2cce-4f2a-8392-aaca8779d392\",\n        \"name\": \"Dry load\",\n        \"description\": \"Transfer washed clothes to the dryer.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"4ad8f704-066e-4f36-ba77-57f4ddc2d96c\",\n        \"chore_id\": \"f4396521-f5f7-473f-893a-87f8f311d115\",\n        \"name\": \"Dust furniture\",\n        \"description\": \"Dust tables, shelves, and other furniture.\",\n        \"order\": 2\n    },\n    {\n        \"id\": \"24c6531e-92df-407e-b4ca-4c139d37fa86\",\n        \"chore_id\": \"53742fa7-b8df-468a-9244-c06cbcc69c90\",\n        \"name\": \"Let it dry\",\n        \"description\": \"Allow the floor to air dry completely.\",\n        \"order\": 3\n    },\n    {\n        \"id\": \"08389d3b-de78-49a7-85f6-e95565396c67\",\n        \"chore_id\": \"df0dec86-6a94-4e0d-8f24-6e35cad83f3c\",\n        \"name\": \"Dry and put away\",\n        \"description\": \"Use a towel or drying rack.\",\n        \"order\": 3\n    },\n    {\n        \"id\": \"f78837d6-bfc3-4b52-af87-cfd542680660\",\n        \"chore_id\": \"4a6fb496-2cce-4f2a-8392-aaca8779d392\",\n        \"name\": \"Fold and put away\",\n        \"description\": \"Fold the dry clothes and put them away.\",\n        \"order\": 3\n    },\n    {\n        \"id\": \"4f0e0b4f-cb51-42cf-ace6-a45da81b5c37\",\n        \"chore_id\": \"55c98632-091e-4240-ae16-2fa434ad51e7\",\n        \"name\": \"Arrange items\",\n        \"description\": \"Place items back on the shelves in an organized manner.\",\n        \"order\": 3\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Generate Todos for Chore",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('Generated todos for:', response.choreName);",
+									"    console.log('Number of todos:', response.todos.length);",
+									"    response.todos.forEach((todo, index) => {",
+									"        console.log(`Todo ${index + 1}: ${todo.name}`);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreName\": \"Clean Kitchen\",\n  \"choreDescription\": \"Deep clean the kitchen including countertops, sink, appliances, and floors\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Todos for Laundry",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreName\": \"Do Laundry\",\n  \"choreDescription\": \"Wash, dry, fold, and put away all dirty clothes and linens\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Todos for Vacuuming",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreName\": \"Vacuum House\",\n  \"choreDescription\": \"Vacuum all rooms, stairs, and furniture in the house\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Todo Items for Chore",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos/chore/{{chore_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"chore",
+								"{{chore_uuid}}"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Todo Items for Chore",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/todos/chore/{{chore_uuid}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"todos",
+										"chore",
+										"{{chore_uuid}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "167"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"a7-F56ymbWjN2+PTFCIJcuGsDem08k\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:29:00 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"5e06d2db-9bf9-4280-80bc-d2ef86ea1973\",\n        \"chore_id\": \"146059a9-cec1-4b5a-b7f0-c3d462323d02\",\n        \"name\": \"Test Todo\",\n        \"description\": \"This is a test todo item\",\n        \"order\": 0\n    }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📊 Activities",
+			"item": [
+				{
+					"name": "Get Recent Activities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/activities?home_id={{home_id}}&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"activities"
+							],
+							"query": [
+								{
+									"key": "home_id",
+									"value": "{{home_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Recent Activities",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/activities?home_id={{home_id}}&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"activities"
+									],
+									"query": [
+										{
+											"key": "home_id",
+											"value": "{{home_id}}"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "875"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"36b-yX1k96No1WpgUi5/wVPcoN/o5CY\""
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Aug 2025 13:29:07 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"uuid\": \"4a6fb496-2cce-4f2a-8392-aaca8779d392\",\n        \"name\": \"Laundry\",\n        \"description\": \"Wash, dry, and fold one load of laundry.\",\n        \"time\": \"2025-08-10T08:14:38.000Z\",\n        \"icon\": \"shirt\",\n        \"status\": \"complete\",\n        \"user_email\": \"user@example.com\",\n        \"home_id\": \"5e4f35ea-b2f8-444f-86ee-a684f86d1a5e\",\n        \"points\": 10,\n        \"completed_at\": \"2025-08-10T05:14:38.000Z\",\n        \"claimed_at\": \"2025-08-10T03:14:38.000Z\",\n        \"created_at\": \"2025-08-10T13:14:38.560Z\",\n        \"updated_at\": \"2025-08-10T13:14:38.560Z\"\n    },\n    {\n        \"uuid\": \"e78d6e65-a626-48dd-a63a-3ea255371b25\",\n        \"name\": \"Vacuum\",\n        \"description\": \"Vacuum the entire house.\",\n        \"time\": \"2025-08-10T06:59:38.000Z\",\n        \"icon\": \"wind\",\n        \"status\": \"complete\",\n        \"user_email\": \"user@example.com\",\n        \"home_id\": \"5e4f35ea-b2f8-444f-86ee-a684f86d1a5e\",\n        \"points\": 10,\n        \"completed_at\": \"2025-08-10T04:14:38.000Z\",\n        \"claimed_at\": \"2025-08-10T02:14:38.000Z\",\n        \"created_at\": \"2025-08-10T13:14:38.560Z\",\n        \"updated_at\": \"2025-08-10T13:14:38.560Z\"\n    }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🗳️ Dispute Votes",
+			"item": [
+				{
+					"name": "Vote Approve",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userEmail\": \"{{user_email}}\",\n  \"vote\": \"approve\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dispute_uuid}}/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dispute_uuid}}",
+								"vote"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Vote Reject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userEmail\": \"{{user_email}}\",\n  \"vote\": \"reject\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dispute_uuid}}/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dispute_uuid}}",
+								"vote"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Vote",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userEmail\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dispute_uuid}}/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dispute_uuid}}",
+								"vote"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vote Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dispute_uuid}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dispute_uuid}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Vote",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dispute_uuid}}/user/{{user_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dispute_uuid}}",
+								"user",
+								"{{user_email}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📝 Todo Generation Flow",
+			"item": [
+				{
+					"name": "1. Create Todo Test Home",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const r = pm.response.json();",
+									"  pm.environment.set('todo_home_id', r.id);",
+									"  console.log('Todo test home:', r.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Todo Generation Test Home\",\n  \"weekly_point_quota\": 100\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create Test User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"todo-test@example.com\",\n  \"homeIds\": [\"{{todo_home_id}}\"],\n  \"name\": \"Todo Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Chore for Todo Testing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const r = pm.response.json();",
+									"  pm.environment.set('todo_chore_uuid', r.uuid);",
+									"  console.log('Todo test chore:', r.uuid);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Deep Clean Bathroom\",\n  \"description\": \"Thoroughly clean the bathroom including toilet, sink, shower, and floor\",\n  \"time\": \"2025-08-15T14:00:00\",\n  \"icon\": \"droplet\",\n  \"home_id\": \"{{todo_home_id}}\",\n  \"points\": 25\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Generate Todos for Bathroom Cleaning",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const r = pm.response.json();",
+									"  console.log('Generated todos for bathroom cleaning:');",
+									"  r.todos.forEach((todo, i) => {",
+									"    console.log(`  ${i+1}. ${todo.name}: ${todo.description}`);",
+									"  });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreName\": \"Deep Clean Bathroom\",\n  \"choreDescription\": \"Thoroughly clean the bathroom including toilet, sink, shower, and floor\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Create Manual Todo for Chore",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const r = pm.response.json();",
+									"  pm.environment.set('todo_uuid', r.id);",
+									"  console.log('Created manual todo:', r.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Gather Cleaning Supplies\",\n  \"description\": \"Get all necessary cleaning products and tools\",\n  \"chore_id\": \"{{todo_chore_uuid}}\",\n  \"order\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Todo by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos/{{todo_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"{{todo_uuid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get All Todos for Chore",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos/chore/{{todo_chore_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"chore",
+								"{{todo_chore_uuid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Get All Todos (Global)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Generate Todos for Different Chore",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const r = pm.response.json();",
+									"  console.log('Generated todos for garage organization:');",
+									"  r.todos.forEach((todo, i) => {",
+									"    console.log(`  ${i+1}. ${todo.name}: ${todo.description}`);",
+									"  });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreName\": \"Organize Garage\",\n  \"choreDescription\": \"Sort through items, organize tools, and clean the garage space\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🗳️ Dispute Voting Flow",
+			"item": [
+				{
+					"name": "1. Create Voting Home",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const r = pm.response.json();",
+									"  pm.environment.set('dv_home_id', r.id);",
+									"  console.log('Voting home:', r.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Voting Test Home\",\n  \"weekly_point_quota\": 100\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"homes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create Claimant User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"claimant@example.com\",\n  \"homeIds\": [\"{{dv_home_id}}\"],\n  \"name\": \"Claimant User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Voter User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"voter@example.com\",\n  \"homeIds\": [\"{{dv_home_id}}\"],\n  \"name\": \"Voter User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Create Chore",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const r = pm.response.json();",
+									"  pm.environment.set('dv_chore_uuid', r.uuid);",
+									"  console.log('Voting chore:', r.uuid);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Voting Flow Chore\",\n  \"description\": \"Chore to test dispute voting\",\n  \"time\": \"2025-08-15T10:00:00\",\n  \"icon\": \"package\",\n  \"home_id\": \"{{dv_home_id}}\",\n  \"points\": 20\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Approve Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{dv_chore_uuid}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{dv_chore_uuid}}",
+								"approve"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Claim Chore (by claimant)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"claimant@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores/{{dv_chore_uuid}}/claim",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{dv_chore_uuid}}",
+								"claim"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Complete Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{dv_chore_uuid}}/complete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"chores",
+								"{{dv_chore_uuid}}",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Create Dispute (by voter)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"  const r = pm.response.json();",
+									"  pm.environment.set('dv_dispute_uuid', r.uuid);",
+									"  console.log('Voting dispute:', r.uuid);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreId\": \"{{dv_chore_uuid}}\",\n  \"disputerEmail\": \"voter@example.com\",\n  \"reason\": \"Testing dispute voting\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/disputes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Get Vote Status (before)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dv_dispute_uuid}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dv_dispute_uuid}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. Vote Approve (by voter)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userEmail\": \"voter@example.com\",\n  \"vote\": \"approve\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dv_dispute_uuid}}/vote",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dv_dispute_uuid}}",
+								"vote"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "11. Get Vote Status (after)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dv_dispute_uuid}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dv_dispute_uuid}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "12. Get Dispute (should be approved)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dv_dispute_uuid}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disputes",
+								"{{dv_dispute_uuid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "13. Get User Vote",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dispute-votes/{{dv_dispute_uuid}}/user/voter@example.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dispute-votes",
+								"{{dv_dispute_uuid}}",
+								"user",
+								"voter@example.com"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

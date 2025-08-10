@@ -127,6 +127,30 @@
 			"value": "chore_completed",
 			"type": "default",
 			"enabled": true
+		},
+		{
+			"key": "todo_home_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "todo_chore_uuid",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_name_for_generation",
+			"value": "Deep Clean Kitchen",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_description_for_generation",
+			"value": "Thoroughly clean the kitchen including countertops, sink, appliances, and floors",
+			"type": "default",
+			"enabled": true
 		}
 	],
 	"_postman_variable_scope": "environment"

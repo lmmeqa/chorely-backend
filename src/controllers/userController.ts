@@ -3,7 +3,7 @@ import { controller } from "./.controller";
 import { User } from "../db/models";
 
 export const createUser = controller(async (req, res) => {
-  const user = await User.create(req.body.email, req.body.homeIds); // homeIds: string[]
+  const user = await User.create(req.body.email, req.body.homeIds, req.body.name); // homeIds: string[]
   res.status(201).json(user);
 });
 

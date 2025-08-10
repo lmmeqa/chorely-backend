@@ -1,0 +1,91 @@
+{
+	"id": "chorely-api-environment",
+	"name": "Chorely API Environment",
+	"values": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4000",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "user_email",
+			"value": "test@example.com",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "user_name",
+			"value": "Test User",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "home_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "home_name",
+			"value": "Test Home",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_uuid",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_name",
+			"value": "Test Chore",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_description",
+			"value": "This is a test chore for API testing",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_time",
+			"value": "2024-01-15T10:00:00Z",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_icon",
+			"value": "🧹",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "chore_points",
+			"value": "10",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "dispute_uuid",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "dispute_reason",
+			"value": "Chore was not completed properly",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "dispute_image_url",
+			"value": "https://example.com/image.jpg",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment"
+}

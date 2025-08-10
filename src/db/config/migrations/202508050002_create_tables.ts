@@ -29,7 +29,7 @@ export async function up(knex: Knex): Promise<void> {
 
   /* users (keep id, but relationships use email) */
   await knex.schema.createTable("users", (t) => {
-    t.string("email").notNullable().unique();
+    t.string("email").primary();
     t.string("name").notNullable();
     t.timestamps(true, true);
   });

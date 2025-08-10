@@ -122,8 +122,9 @@ export default class DisputeVote {
       const totalVotes = votes.length;
 
       // Determine if dispute should be auto-approved or auto-rejected
+      // Priority: if both approve and reject reach threshold, approve wins (more votes needed to approve)
       const isApproved = approveVotes >= requiredVotes;
-      const isRejected = rejectVotes >= requiredVotes;
+      const isRejected = rejectVotes >= requiredVotes && !isApproved; // Only reject if not approved
 
       return {
         dispute_uuid: disputeUuid,

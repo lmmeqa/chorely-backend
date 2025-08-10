@@ -30,8 +30,13 @@ export const claimChore = controller(async (req, res) => {
   res.status(204).end();
 });
 
-export const completeChore = controller(async (req, res) => {
+export const verifyChore = controller(async (req, res) => {
   await Chore.verify(req.params.uuid);
+  res.status(204).end();
+});
+
+export const completeChore = controller(async (req, res) => {
+  await Chore.verify(req.params.uuid); // verify and complete are the same action
   res.status(204).end();
 });
 

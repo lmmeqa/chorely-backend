@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getById,
   createChore,
   listAvailable,
   listUnapproved,
@@ -22,5 +23,5 @@ r.patch("/:uuid/approve",  approveChore);       // PATCH /chores/:uuid/approve
 r.patch("/:uuid/claim",    claimChore);         // PATCH /chores/:uuid/claim
 r.patch("/:uuid/complete", completeChore);      // PATCH /chores/:uuid/complete
 r.patch("/:uuid/verify",   verifyChore);        // PATCH /chores/:uuid/verify
-
+r.get("/:uuid", getById);                 // GET /chores/:uuid
 export default r;

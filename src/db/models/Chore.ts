@@ -1,5 +1,5 @@
-import db from "./db";
-import User, { UserRow } from "./User";
+import { db } from "./index";
+import { ModelError, dbGuard, mapFk, ensureUuid } from "./BaseModel";
 
 export type ChoreStatus = "unapproved" | "unclaimed" | "claimed" | "complete";
 
@@ -7,70 +7,90 @@ export interface ChoreRow {
   uuid: string;
   name: string;
   description: string;
-  time: string;
+  time: string; // timestamptz
   icon: string;
   status: ChoreStatus;
-  user_id: string | null;
+  user_email: string | null; // Can be null when user is deleted
   home_id: string;
-  created_at?: Date;
-  updated_at?: Date;
+  points: number;
+  completed_at: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default class Chore {
-  /* ───────── create ───────── */
-  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_id">) {
-    return (
-      await db<ChoreRow>("chores")
-        .insert({ ...data, status: "unapproved", user_id: null })
-        .returning("*")
-    )[0];
+  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "created_at" | "updated_at"> & { user_email?: string | null }) {
+    return dbGuard(async () => {
+      try {
+        return (await db<ChoreRow>("chores")
+          .insert({ ...data, status: "unapproved", user_email: data.user_email ?? null, completed_at: null })
+          .returning("*"))[0];
+      } catch (e: any) {
+        throw mapFk(e, "Failed to create chore");
+      }
+    }, "Failed to create chore");
   }
 
-  /* ───────── lookup helpers ───────── */
-  static async findByUuid(uuid: string) {
-    const row = await db<ChoreRow>("chores").where({ uuid }).first();
-    if (!row) throw new Error(`Chore '${uuid}' not found`);
-    return row;
-  }
-
-  static byStatus(home_id: string, status: ChoreStatus) {
-    return db<ChoreRow>("chores").where({ home_id, status });
+  static async findByUuid(uuid: string): Promise<ChoreRow> {
+    ensureUuid(uuid);
+    return dbGuard(async () => {
+      const row = await db<ChoreRow>("chores").where({ uuid }).first();
+      if (!row) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
+      return row;
+    }, "Failed to fetch chore");
   }
 
   static available(homeId: string) {
-    return this.byStatus(homeId, "unclaimed").whereNull("user_id");
+    return db<ChoreRow>("chores").where({ home_id: homeId, status: "unclaimed" }).andWhere("user_email", null);
   }
 
   static unapproved(homeId: string) {
-    return this.byStatus(homeId, "unapproved");
+    return db<ChoreRow>("chores").where({ home_id: homeId, status: "unapproved" });
   }
 
-  /* ───────── user-scoped list ───────── */
-  static async forUser(email: string, statuses?: ChoreStatus[]) {
-    const user = await User.findByEmail(email);              // throws if absent
-    let q = db<ChoreRow>("chores").where({ user_id: user.id });
-    if (statuses?.length) q = q.whereIn("status", statuses);
-    return q.orderBy("created_at", "desc");
+  static forUser(email: string, homeId: string) {
+    return db<ChoreRow>("chores").where({ user_email: email, home_id: homeId }).whereIn("status", ["claimed", "complete"]);
   }
 
-  /* ───────── state transitions ───────── */
+  static async setStatus(uuid: string, status: ChoreStatus) {
+    ensureUuid(uuid);
+    return dbGuard(async () => {
+      const n = await db("chores").where({ uuid }).update({ status });
+      if (!n) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
+    }, "Failed to update chore status");
+  }
+  
   static async approve(uuid: string) {
-    await db("chores").where({ uuid, status: "unapproved" }).update({ status: "unclaimed" });
+    await this.setStatus(uuid, "unclaimed");
   }
 
-  static async claim(uuid: string, userId: string) {
-    const updated = await db("chores")
-      .where({ uuid, status: "unclaimed" })
-      .update({ status: "claimed", user_id: userId });
-    if (!updated) throw new Error("Chore is already claimed or not available");
-  }
-
-  static async complete(uuid: string) {
-    await db("chores").where({ uuid }).update({ status: "complete" });
+  static async claim(uuid: string, email: string) {
+    ensureUuid(uuid);
+    return dbGuard(async () => {
+      try {
+        const n = await db("chores")
+          .where({ uuid, status: "unclaimed" })
+          .update({ status: "claimed", user_email: email });
+        if (!n) throw new ModelError("CHORE_NOT_CLAIMABLE", "Chore is already claimed or not available", 409);
+      } catch (e: any) {
+        throw mapFk(e, "User does not exist for claim");
+      }
+    }, "Failed to claim chore");
   }
 
   static async verify(uuid: string) {
-    // business rule: verifying sets to complete as well
-    await db("chores").where({ uuid }).update({ status: "complete" });
+    ensureUuid(uuid);
+    return dbGuard(async () => {
+      const n = await db("chores").where({ uuid }).update({ status: "complete", completed_at: db.fn.now() });
+      if (!n) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
+    }, "Failed to complete chore");
+  }
+
+  static recentActivity(threshold: Date) {
+    return db<ChoreRow>("chores")
+      .where("completed_at", ">=", threshold)
+      .where("status", "complete")
+      .orderBy("completed_at", "desc")
+      .limit(50);
   }
 }

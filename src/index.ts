@@ -13,6 +13,12 @@ import choreRoutes from "./routes/choreRoutes";
 import userRoutes  from "./routes/userRoutes";
 import { DatabaseError } from "pg";
 import homeRoutes from "./routes/homeRoutes";
+import approvalRoutes from "./routes/approvalRoutes";
+import pointsRoutes from "./routes/pointsRoutes";
+import disputeRoutes from "./routes/disputeRoutes";
+import activityRoutes from "./routes/activityRoutes";
+import todoRoutes from "./routes/todoRoutes";
+
 
 const app = express();
 
@@ -24,7 +30,11 @@ app.use(express.json());   // parse JSON bodies into req.body
 app.use("/chores", choreRoutes);  // all chore endpoints
 app.use("/user", userRoutes);  // all user endpoints
 app.use("/homes",  homeRoutes); // all home endpoints
-
+app.use("/approvals", approvalRoutes);
+app.use("/points", pointsRoutes);
+app.use("/disputes", disputeRoutes);
+app.use("/activities", activityRoutes);
+app.use("/todos", todoRoutes);
 
 /** last middleware: converts every error into JSON */
 app.use(

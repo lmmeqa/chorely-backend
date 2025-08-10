@@ -142,19 +142,23 @@ export default class DisputeVote {
       let isRejected = false;
 
       if (is24HoursPassed) {
-        // After 24 hours, if not enough approve votes, auto-reject
-        isRejected = approveVotes < requiredVotes;
-        isApproved = !isRejected && approveVotes >= requiredVotes;
+        // After 24 hours, auto-reject
+        isRejected = true;
+        isApproved = false;
       } else {
-        // Before 24 hours, normal voting logic
+        // Before 24 hours, strict voting logic
         if (approveVotes >= requiredVotes) {
+          // Only approve if half or more people voted approve
           isApproved = true;
+          isRejected = false;
         } else if (rejectVotes >= requiredVotes) {
+          // Only reject if half or more people voted reject
+          isApproved = false;
           isRejected = true;
-        } else if (approveVotes + rejectVotes >= requiredVotes) {
-          // If we have enough votes but not enough for either side, approve wins in case of tie
-          isApproved = approveVotes >= rejectVotes;
-          isRejected = !isApproved;
+        } else {
+          // If not enough votes for either side, keep waiting
+          isApproved = false;
+          isRejected = false;
         }
       }
 

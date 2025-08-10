@@ -36,17 +36,15 @@ export class DisputeTimeoutService {
           
           const approveVotes = votes.filter(v => v.vote === "approve").length;
           
-          // If not enough approve votes after 24 hours, auto-reject
-          if (approveVotes < requiredVotes) {
-            await db("disputes")
-              .where({ uuid: dispute.uuid })
-              .update({ 
-                status: "rejected", 
-                updated_at: db.fn.now() 
-              });
-            
-            console.log(`Auto-rejected dispute ${dispute.uuid} after 24 hours timeout`);
-          }
+          // After 24 hours, auto-reject regardless of vote count
+          await db("disputes")
+            .where({ uuid: dispute.uuid })
+            .update({ 
+              status: "rejected", 
+              updated_at: db.fn.now() 
+            });
+          
+          console.log(`Auto-rejected dispute ${dispute.uuid} after 24 hours timeout`);
         }
       }
     } catch (error) {

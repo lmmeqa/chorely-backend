@@ -98,8 +98,9 @@ Disputes are resolved through a voting system where eligible family members vote
 **Voting Rules:**
 - Only family members who did NOT claim the chore can vote
 - 50% of eligible voters must approve for the dispute to be approved
-- If votes are tied, approve wins
-- After 24 hours, if not enough approve votes, the dispute is automatically rejected
+- 50% of eligible voters must reject for the dispute to be rejected
+- If not enough votes for either side, the dispute remains pending
+- After 24 hours, the dispute is automatically rejected regardless of vote count
 - When approved, the dispute removes points from the chore assignee and reverts the chore to "claimed" status
 
 | Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
@@ -116,8 +117,8 @@ Disputes are resolved through a voting system where eligible family members vote
 **Auto-Resolution:**
 - When 50% or more eligible voters vote "approve", the dispute is automatically approved
 - When 50% or more eligible voters vote "reject", the dispute is automatically rejected
-- If votes are tied, approve wins
-- After 24 hours, if not enough approve votes, the dispute is automatically rejected
+- If not enough votes for either side, the dispute remains pending
+- After 24 hours, the dispute is automatically rejected regardless of vote count
 - Approved disputes remove points from the chore assignee and revert the chore to "claimed" status
 
 ---

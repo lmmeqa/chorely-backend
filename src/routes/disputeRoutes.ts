@@ -1,13 +1,12 @@
 import { Router } from "express";
-import { list, create, getById } from "../controllers/disputeController";
+import { list, create, approve, reject, getById } from "../controllers/disputeController";
 
 const r = Router();
 
 r.get("/", list);                        // GET    /disputes?status=pending
 r.get("/:uuid", getById);                // GET    /disputes/:uuid
 r.post("/", create);                     // POST   /disputes { choreId, reason, imageUrl, disputerEmail }
-
-// Note: approve and reject endpoints have been removed
-// Use /dispute-votes endpoints for voting on disputes
+r.patch("/:uuid/approve", approve);      // PATCH  /disputes/:uuid/approve
+r.patch("/:uuid/reject", reject);        // PATCH  /disputes/:uuid/reject
 
 export default r;

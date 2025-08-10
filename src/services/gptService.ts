@@ -1,10 +1,12 @@
 import OpenAI from 'openai';
-import { TodoItem } from '../db/models';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client only if API key is available
+let openai: OpenAI | null = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 export interface GeneratedTodo {
   name: string;
@@ -13,7 +15,7 @@ export interface GeneratedTodo {
 
 export class GptService {
   static async generateTodosForChore(choreName: string, choreDescription: string): Promise<GeneratedTodo[]> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!openai || !process.env.OPENAI_API_KEY) {
       // Fallback to predefined todos if no API key
       return this.getFallbackTodos(choreName);
     }
@@ -55,180 +57,99 @@ export class GptService {
 
 Description: ${choreDescription}
 
-Please provide 3-6 clear, actionable steps. Format your response as a JSON array of objects with "name" and "description" fields.
+Please provide 3-5 clear, actionable steps. Each step should be:
+- Specific and actionable
+- In logical order
+- Easy to understand and follow
+
+Format your response as a numbered list, with each step on a new line starting with a number and period.
 
 Example format:
-[
-  {
-    "name": "Step 1 name",
-    "description": "Detailed description of what to do"
-  },
-  {
-    "name": "Step 2 name", 
-    "description": "Detailed description of what to do"
-  }
-]
+1. First step description
+2. Second step description
+3. Third step description
 
-Make sure each step is:
-- Clear and actionable
-- In logical order
-- Specific enough to be followed
-- Appropriate for a household chore
-
-Respond only with the JSON array, no additional text.`;
+Please generate the todo list for "${choreName}":`;
   }
 
   private static parseGptResponse(content: string): GeneratedTodo[] {
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const todos = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(todos) && todos.every(todo => todo.name && todo.description)) {
-          return todos;
+      // Try to parse numbered list format
+      const lines = content.split('\n').filter(line => line.trim());
+      const todos: GeneratedTodo[] = [];
+      
+      for (const line of lines) {
+        const match = line.match(/^\d+\.\s*(.+)$/);
+        if (match) {
+          const description = match[1].trim();
+          todos.push({
+            name: description,
+            description: description
+          });
         }
       }
       
-      // If JSON parsing fails, try to parse manually
+      if (todos.length > 0) {
+        return todos;
+      }
+      
+      // Fallback parsing
       return this.parseManualResponse(content);
     } catch (error) {
-      console.error("Failed to parse GPT response:", error);
-      return [];
+      console.error("Error parsing GPT response:", error);
+      return this.getFallbackTodos("Unknown chore");
     }
   }
 
   private static parseManualResponse(content: string): GeneratedTodo[] {
+    // Simple fallback parsing
     const lines = content.split('\n').filter(line => line.trim());
-    const todos: GeneratedTodo[] = [];
-    
-    for (const line of lines) {
-      // Look for numbered steps
-      const stepMatch = line.match(/^\d+\.\s*(.+)/);
-      if (stepMatch) {
-        const name = stepMatch[1].trim();
-        todos.push({
-          name,
-          description: `Complete: ${name}`
-        });
-      }
-    }
-    
-    return todos;
+    return lines.slice(0, 5).map((line, index) => ({
+      name: line.trim(),
+      description: line.trim()
+    }));
   }
 
   private static getFallbackTodos(choreName: string): GeneratedTodo[] {
-    const fallbackTodos: Record<string, GeneratedTodo[]> = {
+    // Fallback todos for common chores
+    const fallbackTodos: { [key: string]: GeneratedTodo[] } = {
       "Taking out trash": [
-        {
-          name: "Collect trash",
-          description: "Gather trash from all bins in the house."
-        },
-        {
-          name: "Replace liners", 
-          description: "Put new liners in all the trash cans."
-        },
-        {
-          name: "Take out to curb",
-          description: "Take the main trash bag to the outdoor bin/curb."
-        }
+        { name: "Collect all trash bags from bins", description: "Gather all full trash bags from around the house" },
+        { name: "Tie bags securely", description: "Make sure all bags are properly tied to prevent spills" },
+        { name: "Take bags to outdoor bin", description: "Carry bags to the main outdoor trash container" },
+        { name: "Place new bags in bins", description: "Replace empty bins with fresh trash bags" },
+        { name: "Clean any spills", description: "Wipe up any mess around the bins" }
       ],
-      "Dusting": [
-        {
-          name: "Gather supplies",
-          description: "Get a duster or microfiber cloth."
-        },
-        {
-          name: "Dust high surfaces",
-          description: "Start from top to bottom."
-        },
-        {
-          name: "Dust furniture",
-          description: "Dust tables, shelves, and other furniture."
-        }
+      "Doing laundry": [
+        { name: "Sort clothes by color and fabric", description: "Separate whites, colors, and delicate items" },
+        { name: "Check pockets and remove items", description: "Empty all pockets and remove any loose items" },
+        { name: "Add detergent and start wash", description: "Add appropriate amount of detergent and start the washing machine" },
+        { name: "Transfer to dryer or hang to dry", description: "Move clothes to dryer or hang on drying rack" },
+        { name: "Fold and put away clothes", description: "Fold clean clothes and return them to their proper places" }
       ],
-      "Mopping": [
-        {
-          name: "Sweep/vacuum first",
-          description: "Remove loose dirt and debris."
-        },
-        {
-          name: "Prepare mop solution",
-          description: "Fill a bucket with water and cleaning solution."
-        },
-        {
-          name: "Mop the floors",
-          description: "Mop from the farthest corner towards the door."
-        },
-        {
-          name: "Let it dry",
-          description: "Allow the floor to air dry completely."
-        }
-      ],
-      "Washing Dishes": [
-        {
-          name: "Scrape plates",
-          description: "Remove leftover food from dishes."
-        },
-        {
-          name: "Wash with soap",
-          description: "Use hot, soapy water to wash each dish."
-        },
-        {
-          name: "Rinse thoroughly",
-          description: "Rinse off all soap suds."
-        },
-        {
-          name: "Dry and put away",
-          description: "Use a towel or drying rack."
-        }
-      ],
-      "Vacuum": [
-        {
-          name: "Clear the floor",
-          description: "Pick up any large items or clutter from the floor."
-        },
-        {
-          name: "Vacuum room by room",
-          description: "Work systematically through the house."
-        },
-        {
-          name: "Use attachments",
-          description: "Use attachments for corners and edges."
-        }
-      ],
-      "Laundry": [
-        {
-          name: "Sort clothes",
-          description: "Separate lights, darks, and colors."
-        },
-        {
-          name: "Wash load",
-          description: "Put one load in the washing machine with detergent."
-        },
-        {
-          name: "Dry load",
-          description: "Transfer washed clothes to the dryer."
-        },
-        {
-          name: "Fold and put away",
-          description: "Fold the dry clothes and put them away."
-        }
+      "Washing dishes": [
+        { name: "Scrape food scraps into trash", description: "Remove any leftover food from plates and utensils" },
+        { name: "Rinse dishes with warm water", description: "Rinse off any remaining food particles" },
+        { name: "Wash with soap and sponge", description: "Clean dishes thoroughly with dish soap and sponge" },
+        { name: "Rinse with clean water", description: "Rinse off all soap suds" },
+        { name: "Dry and put away", description: "Dry dishes and return them to their storage locations" }
       ]
     };
 
-    return fallbackTodos[choreName] || [
-      {
-        name: "Step 1",
-        description: "Complete the first step of the chore."
-      },
-      {
-        name: "Step 2", 
-        description: "Complete the second step of the chore."
-      },
-      {
-        name: "Step 3",
-        description: "Complete the final step of the chore."
+    const lowerChoreName = choreName.toLowerCase();
+    for (const [key, todos] of Object.entries(fallbackTodos)) {
+      if (lowerChoreName.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerChoreName)) {
+        return todos;
       }
+    }
+
+    // Generic fallback
+    return [
+      { name: "Prepare materials", description: "Gather all necessary supplies and tools" },
+      { name: "Start the task", description: "Begin the chore following proper procedures" },
+      { name: "Complete the task", description: "Finish all required steps thoroughly" },
+      { name: "Clean up", description: "Put away tools and clean any mess made" },
+      { name: "Verify completion", description: "Double-check that everything is done correctly" }
     ];
   }
 } 

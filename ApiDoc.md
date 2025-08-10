@@ -90,6 +90,8 @@ All endpoints are JSON-only and follow REST conventions.
 | **GET**  | `/disputes`                 | Get disputes                   | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` |
 | **GET**  | `/disputes/:uuid`           | Get dispute by UUID            | —                               | **200** → `DisputeRow`        |
 | **POST** | `/disputes`                 | Create dispute                 | `{ choreId, reason, imageUrl?, disputerEmail }` | **201** → `DisputeRow` |
+| **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (manual)       | —                               | **204**                       |
+| **PATCH**| `/disputes/:uuid/reject`    | Reject dispute (manual)        | —                               | **204**                       |
 
 ### Dispute Voting System
 

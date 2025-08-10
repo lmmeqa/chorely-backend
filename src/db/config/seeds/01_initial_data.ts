@@ -1,13 +1,32 @@
 import { Knex } from "knex";
 import { v4 as uuidv4 } from "uuid";
 
+// Helper function to create Pacific timezone timestamps
 const minutesFromNow = (mins: number) => {
   const d = new Date();
   d.setMinutes(d.getMinutes() + mins);
-  return d.toISOString();
+  // Convert to Pacific timezone and format as ISO string
+  const pacificTime = new Date(d.toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles"
+  }));
+  return pacificTime.toISOString();
+};
+
+// Helper function for past timestamps in Pacific time
+const hoursAgo = (hours: number) => {
+  const d = new Date();
+  d.setHours(d.getHours() - hours);
+  // Convert to Pacific timezone and format as ISO string
+  const pacificTime = new Date(d.toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles"
+  }));
+  return pacificTime.toISOString();
 };
 
 export async function seed(knex: Knex): Promise<void> {
+  // Set timezone for this session
+  await knex.raw("SET timezone = 'America/Los_Angeles'");
+  
   // clear in FK-safe order
   await knex("chore_approvals").del().catch(() => {});
   await knex("todo_items").del().catch(() => {});
@@ -132,7 +151,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "complete",
       user_email: userByEmail["user@example.com"].email,
       home_id: homeByName["Summer Cabin"].id,
-      completed_at: new Date().toISOString(),
+      completed_at: hoursAgo(2),
     },
     {
       uuid: uuidv4(),
@@ -143,7 +162,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: "complete",
       user_email: userByEmail["user@example.com"].email,
       home_id: homeByName["Summer Cabin"].id,
-      completed_at: new Date().toISOString(),
+      completed_at: hoursAgo(1),
     },
   ];
   await knex("chores").insert(chores);

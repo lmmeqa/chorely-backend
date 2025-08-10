@@ -61,6 +61,42 @@ export const ensureUuid = (uuid: string) => {
 };
 
 // ────────────────────────────────
+// Timestamp Utilities
+// ────────────────────────────────
+export const formatTimestampToPacific = (timestamp: string | Date | null): string | null => {
+  if (!timestamp) return null;
+  
+  const date = new Date(timestamp);
+  return date.toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, "$3-$1-$2T$4:$5:$6");
+};
+
+export const formatRowTimestamps = <T extends Record<string, any>>(row: T): T => {
+  const formatted = { ...row };
+  if (formatted.created_at) {
+    formatted.created_at = formatTimestampToPacific(formatted.created_at);
+  }
+  if (formatted.updated_at) {
+    formatted.updated_at = formatTimestampToPacific(formatted.updated_at);
+  }
+  if (formatted.completed_at) {
+    formatted.completed_at = formatTimestampToPacific(formatted.completed_at);
+  }
+  if (formatted.time) {
+    formatted.time = formatTimestampToPacific(formatted.time);
+  }
+  return formatted;
+};
+
+// ────────────────────────────────
 // Base Model Class
 // ────────────────────────────────
 export abstract class BaseModel<T> {
@@ -71,7 +107,7 @@ export abstract class BaseModel<T> {
   ): Promise<T> {
     const row = await db(table).where(where).first();
     if (!row) throw new ModelError("NOT_FOUND", errorMsg, 404);
-    return row;
+    return formatRowTimestamps(row);
   }
 
   protected static async updateOrThrow(

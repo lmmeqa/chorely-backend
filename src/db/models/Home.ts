@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { ModelError, dbGuard, BaseModel } from "./BaseModel";
+import { ModelError, dbGuard, BaseModel, formatRowTimestamps } from "./BaseModel";
 
 export interface HomeRow {
   id: string;
@@ -15,7 +15,8 @@ export default class Home extends BaseModel<HomeRow> {
     }
 
     return dbGuard(async () => {
-      return (await db<HomeRow>("home").insert({ name: name.trim() }).returning("*"))[0];
+      const result = await db<HomeRow>("home").insert({ name: name.trim() }).returning("*");
+      return formatRowTimestamps(result[0]);
     }, "Failed to create home");
   }
 
@@ -27,7 +28,8 @@ export default class Home extends BaseModel<HomeRow> {
 
   static async all(): Promise<HomeRow[]> {
     return dbGuard(async () => {
-      return await db<HomeRow>("home").orderBy("name");
+      const results = await db<HomeRow>("home").orderBy("name");
+      return results.map(formatRowTimestamps);
     }, "Failed to fetch homes");
   }
 

@@ -34,8 +34,27 @@ export default class Dispute {
   static async setStatus(uuid: string, status: DisputeStatus) {
     ensureUuid(uuid);
     return dbGuard(async () => {
-      const n = await db("disputes").where({ uuid }).update({ status, updated_at: db.fn.now() });
-      if (!n) throw new ModelError("DISPUTE_NOT_FOUND", `Dispute not found: '${uuid}'`, 404);
+      await db.transaction(async (trx) => {
+        const dispute = await trx<DisputeRow>("disputes").where({ uuid }).forUpdate().first();
+        if (!dispute) throw new ModelError("DISPUTE_NOT_FOUND", `Dispute not found: '${uuid}'`, 404);
+
+        // If status is unchanged, nothing to do
+        if (dispute.status === status) {
+          return;
+        }
+
+        await trx("disputes").where({ uuid }).update({ status, updated_at: trx.fn.now() });
+
+        // On approve, remove points from the chore assignee, once
+        if (status === "approved") {
+          const chore = await trx("chores").where({ uuid: dispute.chore_id }).first();
+          if (chore && chore.user_email && chore.points > 0) {
+            await trx("user_homes")
+              .where({ home_id: chore.home_id, user_email: chore.user_email })
+              .decrement("points", chore.points);
+          }
+        }
+      });
     }, "Failed to update dispute");
   }
 }

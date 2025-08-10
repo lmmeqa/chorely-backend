@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { ModelError, dbGuard, mapFk, ensureUuid } from "./BaseModel";
+import { ModelError, dbGuard, mapFk, ensureUuid, formatRowTimestamps } from "./BaseModel";
 
 export type ChoreStatus = "unapproved" | "unclaimed" | "claimed" | "complete";
 
@@ -19,12 +19,13 @@ export interface ChoreRow {
 }
 
 export default class Chore {
-  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "created_at" | "updated_at"> & { user_email?: string | null }) {
+  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
-        return (await db<ChoreRow>("chores")
-          .insert({ ...data, status: "unapproved", user_email: data.user_email ?? null, completed_at: null })
-          .returning("*"))[0];
+        const result = await db<ChoreRow>("chores")
+          .insert({ ...data, status: "unapproved", completed_at: null })
+          .returning("*");
+        return formatRowTimestamps(result[0]);
       } catch (e: any) {
         throw mapFk(e, "Failed to create chore");
       }
@@ -36,20 +37,23 @@ export default class Chore {
     return dbGuard(async () => {
       const row = await db<ChoreRow>("chores").where({ uuid }).first();
       if (!row) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
-      return row;
+      return formatRowTimestamps(row);
     }, "Failed to fetch chore");
   }
 
-  static available(homeId: string) {
-    return db<ChoreRow>("chores").where({ home_id: homeId, status: "unclaimed" }).andWhere("user_email", null);
+  static async available(homeId: string): Promise<ChoreRow[]> {
+    const results = await db<ChoreRow>("chores").where({ home_id: homeId, status: "unclaimed" }).andWhere("user_email", null);
+    return results.map(formatRowTimestamps);
   }
 
-  static unapproved(homeId: string) {
-    return db<ChoreRow>("chores").where({ home_id: homeId, status: "unapproved" });
+  static async unapproved(homeId: string): Promise<ChoreRow[]> {
+    const results = await db<ChoreRow>("chores").where({ home_id: homeId, status: "unapproved" });
+    return results.map(formatRowTimestamps);
   }
 
-  static forUser(email: string, homeId: string) {
-    return db<ChoreRow>("chores").where({ user_email: email, home_id: homeId }).whereIn("status", ["claimed", "complete"]);
+  static async forUser(email: string, homeId: string): Promise<ChoreRow[]> {
+    const results = await db<ChoreRow>("chores").where({ user_email: email, home_id: homeId }).whereIn("status", ["claimed", "complete"]);
+    return results.map(formatRowTimestamps);
   }
 
   static async setStatus(uuid: string, status: ChoreStatus) {
@@ -81,8 +85,23 @@ export default class Chore {
   static async verify(uuid: string) {
     ensureUuid(uuid);
     return dbGuard(async () => {
-      const n = await db("chores").where({ uuid }).update({ status: "complete", completed_at: db.fn.now() });
-      if (!n) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
+      await db.transaction(async (trx) => {
+        // Lock row and re-check state for idempotency
+        const chore = await trx<ChoreRow>("chores").where({ uuid }).forUpdate().first();
+        if (!chore) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
+
+        // Only apply changes if not already complete
+        if (chore.status !== "complete") {
+          await trx("chores").where({ uuid }).update({ status: "complete", completed_at: trx.fn.now() });
+
+          // Auto-award points to the assignee
+          if (chore.user_email && chore.points > 0) {
+            await trx("user_homes")
+              .where({ home_id: chore.home_id, user_email: chore.user_email })
+              .increment("points", chore.points);
+          }
+        }
+      });
     }, "Failed to complete chore");
   }
 

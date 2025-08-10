@@ -2,7 +2,7 @@
  * src/db/models/User.ts
  ***********************/
 import { db } from "./index";
-import { ModelError, dbGuard, mapFk, ensureEmail, ensureHomeId, BaseModel } from "./BaseModel";
+import { ModelError, dbGuard, mapFk, ensureEmail, ensureHomeId, BaseModel, formatRowTimestamps } from "./BaseModel";
 
 export interface UserRow {
   email: string;  // PK
@@ -48,7 +48,7 @@ export default class User extends BaseModel<UserRow> {
           .onConflict(["user_email", "home_id"]).ignore();
       }
 
-      return user;
+      return formatRowTimestamps(user);
     }, "Failed to create user");
   }
 
@@ -69,7 +69,7 @@ export default class User extends BaseModel<UserRow> {
         .where({ user_email: email })
         .select("home.*");
       if (!rows.length) throw new ModelError("NO_HOMES", `User '${email}' has no homes`, 404);
-      return rows;
+      return rows.map(formatRowTimestamps);
     }, "Failed to fetch user homes");
   }
 
@@ -113,7 +113,7 @@ export default class User extends BaseModel<UserRow> {
         .where("user_homes.home_id", homeId)
         .select("users.*");
       // returning [] is acceptable here (home exists; no members)
-      return rows;
+      return rows.map(formatRowTimestamps);
     }, "Failed to fetch users by home");
   }
 }

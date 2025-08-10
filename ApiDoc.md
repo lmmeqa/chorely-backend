@@ -128,8 +128,8 @@ All endpoints are JSON-only and follow REST conventions.
 {
   email:     string,
   name:      string,
-  created_at?: string,  // ISO-8601
-  updated_at?: string
+  created_at?: string,  // Pacific time (YYYY-MM-DDTHH:mm:ss)
+  updated_at?: string   // Pacific time (YYYY-MM-DDTHH:mm:ss)
 }
 
 // HomeRow
@@ -137,8 +137,8 @@ All endpoints are JSON-only and follow REST conventions.
   id:                  string,
   name:                string,
   weekly_point_quota:  number,
-  created_at?:         string,
-  updated_at?:         string
+  created_at?:         string,  // Pacific time (YYYY-MM-DDTHH:mm:ss)
+  updated_at?:         string   // Pacific time (YYYY-MM-DDTHH:mm:ss)
 }
 
 // ChoreRow
@@ -146,15 +146,15 @@ All endpoints are JSON-only and follow REST conventions.
   uuid:          string,
   name:          string,
   description:   string,
-  time:          string,
+  time:          string,        // Pacific time (YYYY-MM-DDTHH:mm:ss)
   icon:          string,
   user_email:    string | null,
   status:        "unapproved" | "unclaimed" | "claimed" | "complete",
   home_id:       string,
   points:        number,
-  completed_at:  string | null,
-  created_at?:   string,
-  updated_at?:   string
+  completed_at:  string | null, // Pacific time (YYYY-MM-DDTHH:mm:ss)
+  created_at?:   string,        // Pacific time (YYYY-MM-DDTHH:mm:ss)
+  updated_at?:   string         // Pacific time (YYYY-MM-DDTHH:mm:ss)
 }
 
 // DisputeRow
@@ -165,8 +165,8 @@ All endpoints are JSON-only and follow REST conventions.
   reason:          string,
   image_url:       string | null,
   status:          "pending" | "approved" | "rejected",
-  created_at?:     string,
-  updated_at?:     string
+  created_at?:     string,  // Pacific time (YYYY-MM-DDTHH:mm:ss)
+  updated_at?:     string   // Pacific time (YYYY-MM-DDTHH:mm:ss)
 }
 
 // TodoItemRow
@@ -221,6 +221,18 @@ All endpoints are JSON-only and follow REST conventions.
 - `404` - Not found
 - `409` - Conflict
 - `500` - Server error
+
+---
+
+## 12 · Timestamp Format
+
+All timestamps in API responses are returned in **Pacific time** using the format `YYYY-MM-DDTHH:mm:ss` (e.g., `"2025-08-10T03:15:31"`).
+
+**Note**: While timestamps are stored in UTC in the database, the API automatically converts them to Pacific time for user-friendly display. This applies to all timestamp fields including:
+- `created_at`
+- `updated_at` 
+- `completed_at`
+- `time` (chore due dates)
 
 ---
 

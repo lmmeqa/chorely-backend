@@ -1,6 +1,19 @@
 import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
+  // Set timezone to Pacific time for this session
+  await knex.raw("SET timezone = 'America/Los_Angeles'");
+  
+  // Create a function to get current Pacific time as timestamp (no timezone)
+  await knex.raw(`
+    CREATE OR REPLACE FUNCTION get_pacific_timestamp()
+    RETURNS timestamp AS $$
+    BEGIN
+      RETURN (NOW() AT TIME ZONE 'America/Los_Angeles')::timestamp;
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
+  
   // 🔥 Always start clean: drop known tables if they exist (child → parent + legacy names)
   const drops = [
     "disputes",
@@ -24,14 +37,16 @@ export async function up(knex: Knex): Promise<void> {
     t.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
     t.string("name").notNullable();
     t.integer("weekly_point_quota").notNullable().defaultTo(100);
-    t.timestamps(true, true); // created_at, updated_at
+    t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
   });
 
   /* users (keep id, but relationships use email) */
   await knex.schema.createTable("users", (t) => {
     t.string("email").primary();
     t.string("name").notNullable();
-    t.timestamps(true, true);
+    t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
   });
 
   /* user_homes (email-based FK) */
@@ -55,7 +70,7 @@ export async function up(knex: Knex): Promise<void> {
     t.uuid("uuid").primary().defaultTo(knex.raw("uuid_generate_v4()"));
     t.string("name").notNullable();
     t.text("description").notNullable();
-    t.timestamp("time", { useTz: true }).notNullable();
+    t.timestamp("time").notNullable();
     t.string("icon").notNullable();
     t.specificType("status", "chore_status").notNullable().defaultTo("unapproved");
     t.string("user_email")
@@ -69,8 +84,9 @@ export async function up(knex: Knex): Promise<void> {
       .inTable("home")
       .onDelete("CASCADE");
     t.integer("points").notNullable().defaultTo(10);
-    t.timestamp("completed_at", { useTz: true }).nullable();
-    t.timestamps(true, true);
+    t.timestamp("completed_at").nullable();
+    t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
 
     t.index(["home_id"]);
     t.index(["status"]);
@@ -122,7 +138,8 @@ export async function up(knex: Knex): Promise<void> {
     t.text("reason").notNullable();
     t.string("image_url").nullable();
     t.specificType("status", "dispute_status").notNullable().defaultTo("pending");
-    t.timestamps(true, true);
+    t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
 
     t.index(["status"]);
     t.index(["chore_id"]);

@@ -1,5 +1,6 @@
 import { controller } from "../middleware";
 import { TodoItem } from "../db/models";
+import { GptService } from "../services/gptService";
 import { v4 as uuidv4 } from "uuid";
 
 export const getTodoItems = controller(async (req, res) => {
@@ -31,4 +32,29 @@ export const getTodoById = controller(async (req, res) => {
 export const getAllTodos = controller(async (req, res) => {
   const todos = await TodoItem.all();
   res.json(todos);
+});
+
+export const generateTodosForChore = controller(async (req, res) => {
+  const { choreName, choreDescription } = req.body;
+  
+  if (!choreName || !choreDescription) {
+    return res.status(400).json({ 
+      error: "choreName and choreDescription are required" 
+    });
+  }
+  
+  try {
+    const generatedTodos = await GptService.generateTodosForChore(choreName, choreDescription);
+    res.json({
+      choreName,
+      choreDescription,
+      todos: generatedTodos
+    });
+  } catch (error) {
+    console.error("Failed to generate todos:", error);
+    res.status(500).json({ 
+      error: "Failed to generate todos",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });

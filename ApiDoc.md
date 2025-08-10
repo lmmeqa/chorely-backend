@@ -129,9 +129,43 @@ Disputes are resolved through a voting system where family members vote to appro
 | **POST** | `/todos`                    | Create a todo item             | `{ name, description, chore_id, order? }` | **201** → `TodoItemRow` |
 | **GET**  | `/todos/:id`                | Get todo item by ID            | —                               | **200** → `TodoItemRow`       |
 | **GET**  | `/todos/chore/:choreId`     | Get todo items for chore       | —                               | **200** → `TodoItemRow[]`     |
+| **POST** | `/todos/generate`           | Generate todos using GPT API   | `{ choreName, choreDescription }` | **200** → `GeneratedTodos`   |
+
+### Auto-Generated Todos
+
+When creating a new chore, the system automatically generates a todo list using GPT API. The generated todos are:
+
+- **Clear and actionable** - Each step is specific and easy to follow
+- **In logical order** - Steps are arranged in the most efficient sequence
+- **Appropriate for household chores** - Tailored to common cleaning and maintenance tasks
+- **Fallback support** - If GPT API is unavailable, predefined todo lists are used
+
+**Generated Todos Response:**
+```json
+{
+  "choreName": "Taking out trash",
+  "choreDescription": "Empty all trash cans and take out the garbage",
+  "todos": [
+    {
+      "name": "Collect trash",
+      "description": "Gather trash from all bins in the house"
+    },
+    {
+      "name": "Replace liners",
+      "description": "Put new liners in all the trash cans"
+    },
+    {
+      "name": "Take out to curb",
+      "description": "Take the main trash bag to the outdoor bin/curb"
+    }
+  ]
+}
+```
 
 *Errors*
 
+* `400` – Missing choreName or choreDescription
+* `500` – GPT API error (falls back to predefined todos)
 * `400` – FK violation (bad `chore_id`)
 * `404` – unknown todo ID
 

@@ -1,5 +1,7 @@
 import { db } from "./index";
 import { ModelError, dbGuard, mapFk, ensureUuid, formatRowTimestamps } from "./BaseModel";
+import { GptService, GeneratedTodo } from "../../services/gptService";
+import { TodoItem } from "./index";
 
 export type ChoreStatus = "unapproved" | "unclaimed" | "claimed" | "complete";
 
@@ -39,10 +41,37 @@ export default class Chore {
   static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "claimed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
+        await db.transaction(async (trx) => {
+          // Create the chore
+          const result = await trx<ChoreRow>("chores")
+            .insert({ ...data, status: "unapproved" })
+            .returning("*");
+          
+          const chore = result[0];
+          
+          // Generate todos using GPT API
+          const generatedTodos = await GptService.generateTodosForChore(data.name, data.description);
+          
+          // Create todo items in database
+          const todoPromises = generatedTodos.map((todo: GeneratedTodo, index: number) => 
+            TodoItem.create({
+              chore_id: chore.uuid,
+              name: todo.name,
+              description: todo.description,
+              order: index
+            })
+          );
+          
+          await Promise.all(todoPromises);
+        });
+        
+        // Return the created chore
         const result = await db<ChoreRow>("chores")
-          .insert({ ...data, status: "unapproved" })
-          .returning("*");
-        return formatRowTimestamps(result[0]);
+          .where({ name: data.name, home_id: data.home_id })
+          .orderBy("created_at", "desc")
+          .first();
+          
+        return formatRowTimestamps(result!);
       } catch (e: any) {
         throw mapFk(e, "Failed to create chore");
       }

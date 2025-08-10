@@ -62,11 +62,23 @@ export default class DisputeVote {
           throw new ModelError("USER_CANNOT_VOTE", "The person who claimed the chore cannot vote on disputes", 403);
         }
 
-        // Insert or update vote
-        await db("dispute_votes")
-          .insert({ dispute_uuid: disputeUuid, user_email: userEmail, vote })
-          .onConflict(["dispute_uuid", "user_email"])
-          .merge({ vote });
+        // Check if vote already exists
+        const existingVote = await db("dispute_votes")
+          .where({ dispute_uuid: disputeUuid, user_email: userEmail })
+          .first();
+        
+        if (existingVote) {
+          // Update only if vote is different
+          if (existingVote.vote !== vote) {
+            await db("dispute_votes")
+              .where({ dispute_uuid: disputeUuid, user_email: userEmail })
+              .update({ vote });
+          }
+        } else {
+          // Insert new vote
+          await db("dispute_votes")
+            .insert({ dispute_uuid: disputeUuid, user_email: userEmail, vote });
+        }
 
         // Check if we need to auto-approve or auto-reject based on votes
         await this.checkAndUpdateDisputeStatus(disputeUuid, chore.home_id);

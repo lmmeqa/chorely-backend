@@ -137,9 +137,18 @@ Disputes are resolved through a voting system where eligible family members vote
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
 | **GET**  | `/todos`                    | Get all todo items             | —                               | **200** → `TodoItemRow[]`     |
 | **POST** | `/todos`                    | Create a todo item             | `{ name, description, chore_id, order? }` | **201** → `TodoItemRow` |
+
 | **GET**  | `/todos/:id`                | Get todo item by ID            | —                               | **200** → `TodoItemRow`       |
 | **GET**  | `/todos/chore/:choreId`     | Get todo items for chore       | —                               | **200** → `TodoItemRow[]`     |
 | **POST** | `/todos/generate`           | Generate todos using GPT API   | `{ choreName, choreDescription }` | **200** → `GeneratedTodos`   |
+
+### Todo Ordering System
+
+Todos are automatically ordered to prevent conflicts:
+
+- **Default Order**: If no `order` is specified, the todo is added to the end of the list
+- **Specified Order**: If an `order` is provided, existing todos are shifted to make room
+- **No Duplicates**: The system ensures no two todos for the same chore have the same order number
 
 ### Auto-Generated Todos
 

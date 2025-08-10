@@ -89,6 +89,7 @@ All endpoints are JSON-only and follow REST conventions.
 | Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
 | **GET**  | `/disputes`                 | Get disputes                   | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` |
+| **GET**  | `/disputes/:uuid`           | Get dispute by UUID            | —                               | **200** → `DisputeRow`        |
 | **POST** | `/disputes`                 | Create dispute                 | `{ choreId, reason, imageUrl?, disputerEmail }` | **201** → `DisputeRow` |
 | **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (removes points, reverts chore) | —                               | **204**                       |
 | **PATCH**| `/disputes/:uuid/reject`    | Reject dispute                 | —                               | **204**                       |
@@ -107,7 +108,15 @@ All endpoints are JSON-only and follow REST conventions.
 
 | Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
-| **GET**  | `/todos/:choreId`           | Get todo items for chore       | —                               | **200** → `TodoItemRow[]`     |
+| **GET**  | `/todos`                    | Get all todo items             | —                               | **200** → `TodoItemRow[]`     |
+| **POST** | `/todos`                    | Create a todo item             | `{ name, description, chore_id, order? }` | **201** → `TodoItemRow` |
+| **GET**  | `/todos/:id`                | Get todo item by ID            | —                               | **200** → `TodoItemRow`       |
+| **GET**  | `/todos/chore/:choreId`     | Get todo items for chore       | —                               | **200** → `TodoItemRow[]`     |
+
+*Errors*
+
+* `400` – FK violation (bad `chore_id`)
+* `404` – unknown todo ID
 
 ---
 

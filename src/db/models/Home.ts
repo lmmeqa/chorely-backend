@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { ModelError, dbGuard, BaseModel, formatRowTimestamps } from "./BaseModel";
+import { dbGuard, BaseModel, formatRowTimestamps, ModelError } from "./BaseModel";
 
 export interface HomeRow {
   id: string;

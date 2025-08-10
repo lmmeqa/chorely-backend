@@ -4,6 +4,7 @@
 import { db } from "./index";
 import { ModelError, dbGuard, mapFk, ensureEmail, ensureHomeId, BaseModel, formatRowTimestamps } from "./BaseModel";
 
+
 export interface UserRow {
   email: string;  // PK
   name: string;

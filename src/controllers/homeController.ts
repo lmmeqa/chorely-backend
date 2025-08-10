@@ -1,5 +1,5 @@
 import { Home, User } from "../db/models";
-import { controller } from "./.controller";
+import { controller } from "../middleware";
 
 
 export const createHome = controller(async (req, res) => {
@@ -22,7 +22,8 @@ export const getHomeUsers = controller(async (req, res) => {
 });
 
 export const updateWeeklyQuota = controller(async (req, res) => {
-  const { weeklyPointQuota } = req.body;
-  await Home.updateWeeklyQuota(req.params.id, weeklyPointQuota);
-  res.json({ weeklyPointQuota });
+  const { weeklyPointQuota, weekly_point_quota } = req.body;
+  const quota = weeklyPointQuota ?? weekly_point_quota;
+  await Home.updateWeeklyQuota(req.params.id, quota);
+  res.json({ weeklyPointQuota: quota });
 });

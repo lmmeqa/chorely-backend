@@ -18,10 +18,8 @@ const config: Knex.Config = {
     extension: "ts",
   },
   pool: {
-    afterCreate: (conn: any, done: any) => {
-      // Set timezone for each connection
-      conn.query("SET timezone = 'America/Los_Angeles'", done);
-    },
+    min: 2,
+    max: 10,
   },
 };
 export default config;

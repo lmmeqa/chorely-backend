@@ -1,4 +1,4 @@
-import { controller } from "./.controller";
+import { controller } from "../middleware";
 import { Points } from "../db/models";
 import { db } from "../db/models";
 

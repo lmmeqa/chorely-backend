@@ -36,7 +36,7 @@ export default class Points extends BaseModel<UserHomeRow> {
       const result = await db("user_homes")
         .insert({ home_id: homeId, user_email: email, points: delta })
         .onConflict(["home_id", "user_email"])
-        .merge(db.raw("points = points + ?", [delta]))
+        .merge({ points: db.raw("user_homes.points + ?", [delta]) })
         .returning("points");
       
       return result[0]?.points || 0;

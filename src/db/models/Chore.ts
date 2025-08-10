@@ -36,11 +36,11 @@ const calculateDynamicPoints = (basePoints: number, createdAt: string, status: C
 };
 
 export default class Chore {
-  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "created_at" | "updated_at">) {
+  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "claimed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
         const result = await db<ChoreRow>("chores")
-          .insert({ ...data, status: "unapproved", completed_at: null })
+          .insert({ ...data, status: "unapproved" })
           .returning("*");
         return formatRowTimestamps(result[0]);
       } catch (e: any) {

@@ -1,4 +1,4 @@
-import { controller } from "./.controller";
+import { controller } from "../middleware";
 import { Chore, User } from "../db/models";
 
 export const createChore = controller(async (req, res) => {

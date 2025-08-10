@@ -1,10 +1,18 @@
-import { controller } from "./.controller";
+import { controller } from "../middleware";
 import { Dispute } from "../db/models";
 import { v4 as uuidv4 } from "uuid";
 
 export const list = controller(async (req, res) => {
   const status = (req.query.status as string) as any;
   res.json(await Dispute.list(status));
+});
+
+export const getById = controller(async (req, res) => {
+  const dispute = await Dispute.findByUuid(req.params.uuid);
+  if (!dispute) {
+    return res.status(404).json({ error: "Dispute not found" });
+  }
+  res.json(dispute);
 });
 
 export const create = controller(async (req, res) => {

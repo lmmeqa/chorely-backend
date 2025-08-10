@@ -33,6 +33,12 @@
 			"enabled": true
 		},
 		{
+			"key": "home_quota",
+			"value": "100",
+			"type": "default",
+			"enabled": true
+		},
+		{
 			"key": "chore_uuid",
 			"value": "",
 			"type": "default",
@@ -83,6 +89,42 @@
 		{
 			"key": "dispute_image_url",
 			"value": "https://example.com/image.jpg",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "todo_uuid",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "todo_title",
+			"value": "Test Todo",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "todo_description",
+			"value": "This is a test todo item",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "todo_due_date",
+			"value": "2024-01-15T10:00:00Z",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "points_delta",
+			"value": "50",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "activity_type",
+			"value": "chore_completed",
 			"type": "default",
 			"enabled": true
 		}

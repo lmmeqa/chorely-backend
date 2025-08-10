@@ -1,5 +1,5 @@
 // src/controllers/userController.ts
-import { controller } from "./.controller";
+import { controller } from "../middleware";
 import { User } from "../db/models";
 
 export const createUser = controller(async (req, res) => {

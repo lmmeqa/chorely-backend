@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { ModelError, dbGuard, mapFk, ensureUuid } from "./BaseModel";
+import { ModelError, dbGuard, mapFk, ensureUuid, formatRowTimestamps } from "./BaseModel";
 
 export type DisputeStatus = "pending" | "approved" | "rejected";
 
@@ -21,6 +21,14 @@ export default class Dispute {
       : db<DisputeRow>("disputes").orderBy("created_at", "desc");
   }
 
+  static async findByUuid(uuid: string): Promise<DisputeRow | null> {
+    ensureUuid(uuid);
+    return dbGuard(async () => {
+      const dispute = await db<DisputeRow>("disputes").where({ uuid }).first();
+      return dispute ? formatRowTimestamps(dispute) : null;
+    }, "Failed to fetch dispute");
+  }
+
   static async create(row: Omit<DisputeRow, "updated_at">) {
     return dbGuard(async () => {
       try {
@@ -34,15 +42,15 @@ export default class Dispute {
   static async setStatus(uuid: string, status: DisputeStatus) {
     ensureUuid(uuid);
     return dbGuard(async () => {
+      const dispute = await db<DisputeRow>("disputes").where({ uuid }).first();
+      if (!dispute) throw new ModelError("DISPUTE_NOT_FOUND", `Dispute not found: '${uuid}'`, 404);
+
+      // If status is unchanged, nothing to do
+      if (dispute.status === status) {
+        return;
+      }
+
       await db.transaction(async (trx) => {
-        const dispute = await trx<DisputeRow>("disputes").where({ uuid }).forUpdate().first();
-        if (!dispute) throw new ModelError("DISPUTE_NOT_FOUND", `Dispute not found: '${uuid}'`, 404);
-
-        // If status is unchanged, nothing to do
-        if (dispute.status === status) {
-          return;
-        }
-
         await trx("disputes").where({ uuid }).update({ status, updated_at: trx.fn.now() });
 
         // On approve, remove points from the chore assignee and reverse chore completion

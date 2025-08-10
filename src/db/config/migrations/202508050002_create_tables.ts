@@ -84,8 +84,8 @@ export async function up(knex: Knex): Promise<void> {
       .inTable("home")
       .onDelete("CASCADE");
     t.integer("points").notNullable().defaultTo(10);
-    t.timestamp("completed_at").nullable();
-    t.timestamp("claimed_at").nullable();
+    t.timestamp("completed_at").nullable().defaultTo(null);
+    t.timestamp("claimed_at").nullable().defaultTo(null);
     t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
     t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
 

@@ -1,4 +1,4 @@
-import { controller } from "./.controller";
+import { controller } from "../middleware";
 import { Chore, Approval, User } from "../db/models";
 
 const calcRequired = async (homeId: string) => {
@@ -29,5 +29,11 @@ export const unvote = controller(async (req, res) => {
   const chore = await Chore.findByUuid(req.params.uuid);
   const voters = await Approval.unvote(chore.uuid, userEmail);
   const required = await calcRequired(chore.home_id);
+  
+  // Check if votes have dropped below threshold and revert to unapproved
+  if (voters.length < required && chore.status === "unclaimed") {
+    await Chore.setStatus(chore.uuid, "unapproved");
+  }
+  
   res.json({ approved: voters.length >= required, votes: voters.length, required, voters });
 });

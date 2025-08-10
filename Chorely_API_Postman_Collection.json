@@ -2,12 +2,191 @@
 	"info": {
 		"_postman_id": "chorely-api-collection",
 		"name": "Chorely API",
-		"description": "Complete API collection for testing Chorely backend endpoints",
+		"description": "Complete API collection for testing Chorely backend endpoints with useful flows",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "Users",
+			"name": "🚀 Quick Start Flow",
+			"item": [
+				{
+					"name": "1. Create Home",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{home_name}}\",\n  \"weekly_point_quota\": {{home_quota}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": ["{{base_url}}"],
+							"path": ["homes"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('home_id', response.id);",
+									"    console.log('Home created with ID:', response.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeIds\": [\"{{home_id}}\"],\n  \"name\": \"{{user_name}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": ["{{base_url}}"],
+							"path": ["user"]
+						}
+					}
+				},
+				{
+					"name": "3. Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/login",
+							"host": ["{{base_url}}"],
+							"path": ["user", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏠 Homes",
+			"item": [
+				{
+					"name": "Create Home",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{home_name}}\",\n  \"weeklyPointQuota\": {{home_quota}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": ["{{base_url}}"],
+							"path": ["homes"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('home_id', response.id);",
+									"    console.log('Home created with ID:', response.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get All Homes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/homes",
+							"host": ["{{base_url}}"],
+							"path": ["homes"]
+						}
+					}
+				},
+				{
+					"name": "Get Home by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/homes/{{home_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["homes", "{{home_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Home Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/homes/{{home_id}}/users",
+							"host": ["{{base_url}}"],
+							"path": ["homes", "{{home_id}}", "users"]
+						}
+					}
+				},
+				{
+					"name": "Update Home Quota",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weeklyPointQuota\": {{home_quota}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/homes/{{home_id}}/quota",
+							"host": ["{{base_url}}"],
+							"path": ["homes", "{{home_id}}", "quota"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👤 Users",
 			"item": [
 				{
 					"name": "Create User",
@@ -25,15 +204,10 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"user"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["user"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Login User",
@@ -51,16 +225,10 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/user/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"user",
-								"login"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["user", "login"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Get User by Email",
@@ -69,16 +237,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/user/{{user_email}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"user",
-								"{{user_email}}"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["user", "{{user_email}}"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Get User Homes",
@@ -87,17 +249,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/user/{{user_email}}/home",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"user",
-								"{{user_email}}",
-								"home"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["user", "{{user_email}}", "home"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Join Home",
@@ -115,161 +270,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/user/join",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"user",
-								"join"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["user", "join"]
 						}
-					},
-					"response": []
-				},
-				{
-					"name": "Leave Home",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"homeId\": \"{{home_id}}\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/user/leave",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"user",
-								"leave"
-							]
-						}
-					},
-					"response": []
+					}
 				}
 			]
 		},
 		{
-			"name": "Homes",
-			"item": [
-				{
-					"name": "Create Home",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"{{home_name}}\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/homes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"homes"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Homes",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/homes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"homes"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Home by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/homes/{{home_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"homes",
-								"{{home_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Home Users",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/homes/{{home_id}}/users",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"homes",
-								"{{home_id}}",
-								"users"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Home Quota",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"weeklyPointQuota\": 100\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/homes/{{home_id}}/quota",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"homes",
-								"{{home_id}}",
-								"quota"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Chores",
+			"name": "🧹 Chores",
 			"item": [
 				{
 					"name": "Create Chore",
@@ -283,19 +292,28 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"{{chore_name}}\",\n  \"description\": \"{{chore_description}}\",\n  \"time\": \"{{chore_time}}\",\n  \"icon\": \"{{chore_icon}}\",\n  \"home_id\": \"{{home_id}}\",\n  \"points\": {{chore_points}},\n  \"user_email\": \"{{user_email}}\"\n}"
+							"raw": "{\n  \"name\": \"{{chore_name}}\",\n  \"description\": \"{{chore_description}}\",\n  \"time\": \"{{chore_time}}\",\n  \"icon\": \"{{chore_icon}}\",\n  \"home_id\": \"{{home_id}}\",\n  \"points\": {{chore_points}}\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/chores",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores"]
 						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('chore_uuid', response.uuid);",
+									"    console.log('Chore created with UUID:', response.uuid);",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get Chore by UUID",
@@ -304,16 +322,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/chores/{{chore_uuid}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"{{chore_uuid}}"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Get Available Chores",
@@ -322,17 +334,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/chores/available/{{home_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"available",
-								"{{home_id}}"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores", "available", "{{home_id}}"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Get Unapproved Chores",
@@ -341,17 +346,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/chores/unapproved/{{home_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"unapproved",
-								"{{home_id}}"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores", "unapproved", "{{home_id}}"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Get User Chores",
@@ -360,13 +358,8 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/chores/user?email={{user_email}}&homeId={{home_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"user"
-							],
+							"host": ["{{base_url}}"],
+							"path": ["chores", "user"],
 							"query": [
 								{
 									"key": "email",
@@ -378,8 +371,7 @@
 								}
 							]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Approve Chore",
@@ -388,17 +380,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/chores/{{chore_uuid}}/approve",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"{{chore_uuid}}",
-								"approve"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}", "approve"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Claim Chore",
@@ -416,17 +401,10 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/chores/{{chore_uuid}}/claim",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"{{chore_uuid}}",
-								"claim"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}", "claim"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Complete Chore",
@@ -435,286 +413,15 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/chores/{{chore_uuid}}/complete",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"{{chore_uuid}}",
-								"complete"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}", "complete"]
 						}
-					},
-					"response": []
-				},
-				{
-					"name": "Verify Chore",
-					"request": {
-						"method": "PATCH",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/chores/{{chore_uuid}}/verify",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"chores",
-								"{{chore_uuid}}",
-								"verify"
-							]
-						}
-					},
-					"response": []
+					}
 				}
 			]
 		},
 		{
-			"name": "Points",
-			"item": [
-				{
-					"name": "Get All User Points",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/points/{{home_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"points",
-								"{{home_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get User Points",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"points",
-								"{{home_id}}",
-								"{{user_email}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Add Points to User",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"delta\": 10\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"points",
-								"{{home_id}}",
-								"{{user_email}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update User Points",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"points\": 50\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"points",
-								"{{home_id}}",
-								"{{user_email}}"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Disputes",
-			"item": [
-				{
-					"name": "Get Disputes",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/disputes?status=pending",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"disputes"
-							],
-							"query": [
-								{
-									"key": "status",
-									"value": "pending"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create Dispute",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"choreId\": \"{{chore_uuid}}\",\n  \"reason\": \"{{dispute_reason}}\",\n  \"imageUrl\": \"{{dispute_image_url}}\",\n  \"disputerEmail\": \"{{user_email}}\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/disputes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"disputes"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Approve Dispute",
-					"request": {
-						"method": "PATCH",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/approve",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"disputes",
-								"{{dispute_uuid}}",
-								"approve"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Reject Dispute",
-					"request": {
-						"method": "PATCH",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/reject",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"disputes",
-								"{{dispute_uuid}}",
-								"reject"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Activity",
-			"item": [
-				{
-					"name": "Get Recent Activity",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/activities?homeId={{home_id}}&timeFrame=7d",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"activities"
-							],
-							"query": [
-								{
-									"key": "homeId",
-									"value": "{{home_id}}"
-								},
-								{
-									"key": "timeFrame",
-									"value": "7d"
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Todos",
-			"item": [
-				{
-					"name": "Get Todo Items",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/todos/{{chore_uuid}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"todos",
-								"{{chore_uuid}}"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Approvals",
+			"name": "✅ Approvals",
 			"item": [
 				{
 					"name": "Get Approval Status",
@@ -723,19 +430,13 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/approvals/{{chore_uuid}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"approvals",
-								"{{chore_uuid}}"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["approvals", "{{chore_uuid}}"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
-					"name": "Vote for Approval",
+					"name": "Vote for Chore",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -750,17 +451,10 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/approvals/{{chore_uuid}}/vote",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"approvals",
-								"{{chore_uuid}}",
-								"vote"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["approvals", "{{chore_uuid}}", "vote"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "Remove Vote",
@@ -778,70 +472,433 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/approvals/{{chore_uuid}}/unvote",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"approvals",
-								"{{chore_uuid}}",
-								"unvote"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["approvals", "{{chore_uuid}}", "unvote"]
 						}
-					},
-					"response": []
+					}
 				}
 			]
-		}
-	],
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					"// Auto-generate UUIDs if not set",
-					"if (!pm.environment.get('chore_uuid')) {",
-					"    pm.environment.set('chore_uuid', pm.variables.replaceIn('{{$guid}}'));",
-					"}",
-					"if (!pm.environment.get('dispute_uuid')) {",
-					"    pm.environment.set('dispute_uuid', pm.variables.replaceIn('{{$guid}}'));",
-					"}"
-				]
-			}
 		},
 		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					"// Common test script",
-					"pm.test(\"Status code is 200 or 201 or 204\", function () {",
-					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
-					"});",
-					"",
-					"pm.test(\"Response time is less than 2000ms\", function () {",
-					"    pm.expect(pm.response.responseTime).to.be.below(2000);",
-					"});",
-					"",
-					"// Auto-save IDs from responses",
-					"if (pm.response.code === 201) {",
-					"    const response = pm.response.json();",
-					"    if (response.id) {",
-					"        pm.environment.set('home_id', response.id);",
-					"    }",
-					"    if (response.uuid) {",
-					"        pm.environment.set('chore_uuid', response.uuid);",
-					"    }",
-					"}"
-				]
-			}
-		}
-	],
-	"variable": [
+			"name": "💰 Points",
+			"item": [
+				{
+					"name": "Get All Points in Home",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["points", "{{home_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get User Points",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["points", "{{home_id}}", "{{user_email}}"]
+						}
+					}
+				},
+				{
+					"name": "Add Points to User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"delta\": {{points_delta}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["points", "{{home_id}}", "{{user_email}}"]
+						}
+					}
+				},
+				{
+					"name": "Remove Points from User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"delta\": -{{points_delta}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["points", "{{home_id}}", "{{user_email}}"]
+						}
+					}
+				},
+				{
+					"name": "Update User Points",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"points\": {{points_delta}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/points/{{home_id}}/{{user_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["points", "{{home_id}}", "{{user_email}}"]
+						}
+					}
+				}
+			]
+		},
 		{
-			"key": "base_url",
-			"value": "http://localhost:4000",
-			"type": "string"
+			"name": "⚖️ Disputes",
+			"item": [
+				{
+					"name": "Create Dispute",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreId\": \"{{chore_uuid}}\",\n  \"disputerEmail\": \"{{user_email}}\",\n  \"reason\": \"{{dispute_reason}}\",\n  \"imageUrl\": \"{{dispute_image_url}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/disputes",
+							"host": ["{{base_url}}"],
+							"path": ["disputes"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('dispute_uuid', response.uuid);",
+									"    console.log('Dispute created with UUID:', response.uuid);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Dispute by UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["disputes", "{{dispute_uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "Get All Disputes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes",
+							"host": ["{{base_url}}"],
+							"path": ["disputes"]
+						}
+					}
+				},
+				{
+					"name": "Approve Dispute",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/approve",
+							"host": ["{{base_url}}"],
+							"path": ["disputes", "{{dispute_uuid}}", "approve"]
+						}
+					}
+				},
+				{
+					"name": "Reject Dispute",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/reject",
+							"host": ["{{base_url}}"],
+							"path": ["disputes", "{{dispute_uuid}}", "reject"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📝 Todos",
+			"item": [
+				{
+					"name": "Create Todo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{todo_title}}\",\n  \"description\": \"{{todo_description}}\",\n  \"chore_id\": \"{{chore_uuid}}\",\n  \"order\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos",
+							"host": ["{{base_url}}"],
+							"path": ["todos"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('todo_uuid', response.id);",
+									"    console.log('Todo created with ID:', response.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Todo by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos/{{todo_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["todos", "{{todo_uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "Get All Todos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos",
+							"host": ["{{base_url}}"],
+							"path": ["todos"]
+						}
+					}
+				},
+
+				{
+					"name": "Get Todo Items for Chore",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos/chore/{{chore_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["todos", "chore", "{{chore_uuid}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Activities",
+			"item": [
+				{
+					"name": "Get Recent Activities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/activities?home_id={{home_id}}&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["activities"],
+							"query": [
+								{
+									"key": "home_id",
+									"value": "{{home_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔄 Complete Chore Flow",
+			"item": [
+				{
+					"name": "1. Create Chore",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{chore_name}}\",\n  \"description\": \"{{chore_description}}\",\n  \"time\": \"{{chore_time}}\",\n  \"icon\": \"{{chore_icon}}\",\n  \"home_id\": \"{{home_id}}\",\n  \"points\": {{chore_points}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores",
+							"host": ["{{base_url}}"],
+							"path": ["chores"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('chore_uuid', response.uuid);",
+									"    console.log('Chore created with UUID:', response.uuid);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Approve Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}/approve",
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}", "approve"]
+						}
+					}
+				},
+				{
+					"name": "3. Claim Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}/claim",
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}", "claim"]
+						}
+					}
+				},
+				{
+					"name": "4. Complete Chore",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chores/{{chore_uuid}}/complete",
+							"host": ["{{base_url}}"],
+							"path": ["chores", "{{chore_uuid}}", "complete"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "⚖️ Dispute Flow",
+			"item": [
+				{
+					"name": "1. Create Dispute",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"choreId\": \"{{chore_uuid}}\",\n  \"disputerEmail\": \"{{user_email}}\",\n  \"reason\": \"{{dispute_reason}}\",\n  \"imageUrl\": \"{{dispute_image_url}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/disputes",
+							"host": ["{{base_url}}"],
+							"path": ["disputes"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('dispute_uuid', response.uuid);",
+									"    console.log('Dispute created with UUID:', response.uuid);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Approve Dispute",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/disputes/{{dispute_uuid}}/approve",
+							"host": ["{{base_url}}"],
+							"path": ["disputes", "{{dispute_uuid}}", "approve"]
+						}
+					}
+				}
+			]
 		}
 	]
 }

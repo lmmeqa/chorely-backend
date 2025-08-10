@@ -5,19 +5,17 @@
  *  • Mounts API routes under /chores
  *  • Starts HTTP server
  */
-import { Request, Response, NextFunction } from "express";
-
 import express from "express";
 import cors from "cors";
 import choreRoutes from "./routes/choreRoutes";
 import userRoutes  from "./routes/userRoutes";
-import { DatabaseError } from "pg";
 import homeRoutes from "./routes/homeRoutes";
 import approvalRoutes from "./routes/approvalRoutes";
 import pointsRoutes from "./routes/pointsRoutes";
 import disputeRoutes from "./routes/disputeRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import todoRoutes from "./routes/todoRoutes";
+import { errorHandler } from "./middleware";
 
 
 const app = express();
@@ -37,35 +35,14 @@ app.use("/activities", activityRoutes);
 app.use("/todos", todoRoutes);
 
 /** last middleware: converts every error into JSON */
-app.use(
-  (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    // default response
-    let status = 500;
-    let message = "Unexpected server error";
-
-    if (err instanceof Error) {
-      // map well-known Postgres SQLSTATE codes
-      const code = (err as DatabaseError | { code?: string }).code;
-      switch (code) {
-        case "23505": // unique_violation
-          status = 409;
-          message = "Resource already exists";
-          break;
-        case "23503": // foreign_key_violation
-          status = 400;
-          message = "Related record not found";
-          break;
-        default:
-          message = err.message; // any other error
-      }
-    }
-
-    res.status(status).json({ error: message });
-  }
-);
+app.use(errorHandler);
 
 
 
 // ─────── Boot HTTP server ───────
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`\x1b[35m[SERVER]\x1b[0m API ready on http://localhost:${PORT}`);
+  console.log(`\x1b[35m[SERVER]\x1b[0m Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`\x1b[35m[SERVER]\x1b[0m Database: ${process.env.DB_HOST || 'db'}:${process.env.DB_PORT || '5432'}`);
+});

@@ -64,6 +64,10 @@ All endpoints are JSON-only and follow REST conventions.
 | **PATCH** | `/chores/:uuid/claim`        | Claim a chore                        | `{ "email": "me@x.com" }`                    | **204**                |
 | **PATCH** | `/chores/:uuid/complete`     | Mark complete (auto-awards dynamic points) | —                                            | **204**                |
 
+> Deprecated
+>
+> - `PATCH /chores/:uuid/verify` is retired. The route exists only to return **410 Gone** with a message to use `PATCH /chores/:uuid/complete` instead.
+
 *Errors*
 
 * `400` – FK violation (bad `home_id` / user not in home)
@@ -90,8 +94,38 @@ All endpoints are JSON-only and follow REST conventions.
 | **GET**  | `/disputes`                 | Get disputes                   | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` |
 | **GET**  | `/disputes/:uuid`           | Get dispute by UUID            | —                               | **200** → `DisputeRow`        |
 | **POST** | `/disputes`                 | Create dispute                 | `{ choreId, reason, imageUrl?, disputerEmail }` | **201** → `DisputeRow` |
-| **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (removes points, reverts chore) | —                               | **204**                       |
-| **PATCH**| `/disputes/:uuid/reject`    | Reject dispute                 | —                               | **204**                       |
+| **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (manual)       | —                               | **204**                       |
+| **PATCH**| `/disputes/:uuid/reject`    | Reject dispute (manual)        | —                               | **204**                       |
+
+### Dispute Voting System
+
+Disputes are resolved through a voting system where eligible family members vote to approve or reject the dispute. The person who claimed the chore cannot vote on disputes.
+
+**Voting Rules:**
+- Only family members who did NOT claim the chore can vote
+- 50% of eligible voters must approve for the dispute to be approved
+- 50% of eligible voters must reject for the dispute to be rejected
+- If not enough votes for either side, the dispute remains pending
+- After 24 hours, the dispute is automatically rejected regardless of vote count
+- When approved, the dispute removes points from the chore assignee and reverts the chore to "claimed" status
+
+| Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
+| -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
+| **POST** | `/dispute-votes/:disputeUuid/vote` | Vote on dispute            | `{ userEmail, vote }`           | **204**                       |
+| **DELETE**| `/dispute-votes/:disputeUuid/vote` | Remove vote              | `{ userEmail }`                 | **204**                       |
+| **GET**  | `/dispute-votes/:disputeUuid/status` | Get vote status        | —                               | **200** → `DisputeVoteStatus` |
+| **GET**  | `/dispute-votes/:disputeUuid/user/:userEmail` | Get user's vote | —                               | **200** → `{ vote }`          |
+
+**Vote Types:**
+- `"approve"` - Vote to approve the dispute (revert chore completion)
+- `"reject"` - Vote to reject the dispute (keep chore completed)
+
+**Auto-Resolution:**
+- When 50% or more eligible voters vote "approve", the dispute is automatically approved
+- When 50% or more eligible voters vote "reject", the dispute is automatically rejected
+- If not enough votes for either side, the dispute remains pending
+- After 24 hours, the dispute is automatically rejected regardless of vote count
+- Approved disputes remove points from the chore assignee and revert the chore to "claimed" status
 
 ---
 
@@ -111,9 +145,51 @@ All endpoints are JSON-only and follow REST conventions.
 | **POST** | `/todos`                    | Create a todo item             | `{ name, description, chore_id, order? }` | **201** → `TodoItemRow` |
 | **GET**  | `/todos/:id`                | Get todo item by ID            | —                               | **200** → `TodoItemRow`       |
 | **GET**  | `/todos/chore/:choreId`     | Get todo items for chore       | —                               | **200** → `TodoItemRow[]`     |
+| **POST** | `/todos/generate`           | Generate todos using GPT API   | `{ choreName, choreDescription }` | **200** → `GeneratedTodos`   |
+
+### Todo Ordering System
+
+Todos are automatically ordered to prevent conflicts:
+
+- **Default Order**: If no `order` is specified, the todo is added to the end of the list
+- **Specified Order**: If an `order` is provided, existing todos are shifted to make room
+- **No Duplicates**: The system ensures no two todos for the same chore have the same order number
+
+### Auto-Generated Todos
+
+When creating a new chore, the system automatically generates a todo list using GPT API. The generated todos are:
+
+- **Clear and actionable** - Each step is specific and easy to follow
+- **In logical order** - Steps are arranged in the most efficient sequence
+- **Appropriate for household chores** - Tailored to common cleaning and maintenance tasks
+- **Fallback support** - If GPT API is unavailable, predefined todo lists are used
+
+**Generated Todos Response:**
+```json
+{
+  "choreName": "Taking out trash",
+  "choreDescription": "Empty all trash cans and take out the garbage",
+  "todos": [
+    {
+      "name": "Collect trash",
+      "description": "Gather trash from all bins in the house"
+    },
+    {
+      "name": "Replace liners",
+      "description": "Put new liners in all the trash cans"
+    },
+    {
+      "name": "Take out to curb",
+      "description": "Take the main trash bag to the outdoor bin/curb"
+    }
+  ]
+}
+```
 
 *Errors*
 
+* `400` – Missing choreName or choreDescription
+* `500` – GPT API error (falls back to predefined todos)
 * `400` – FK violation (bad `chore_id`)
 * `404` – unknown todo ID
 
@@ -207,6 +283,21 @@ All endpoints are JSON-only and follow REST conventions.
   votes:     number,    // Current number of votes
   required:  number,    // Required votes for approval
   voters:    string[]   // Array of user emails who voted
+}
+
+// DisputeVoteStatus (from GET /dispute-votes/:disputeUuid/status)
+{
+  dispute_uuid:    string,    // UUID of the dispute
+  approve_votes:   number,    // Number of approve votes
+  reject_votes:    number,    // Number of reject votes
+  total_votes:     number,    // Total number of votes cast
+  required_votes:  number,    // Required votes for resolution (50% of home members)
+  is_approved:     boolean,   // Whether dispute is approved (approve_votes >= required_votes)
+  is_rejected:     boolean,   // Whether dispute is rejected (reject_votes >= required_votes)
+  voters:          {          // Array of voters and their votes
+    user_email:    string,
+    vote:          "approve" | "reject"
+  }[]
 }
 ```
 

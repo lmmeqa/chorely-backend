@@ -1,6 +1,6 @@
 set -e
 
-KNEX="npx knex --knexfile ./src/db/config/knexfile.js"
+KNEX="npx knex --knexfile ./src/db/config/knexfile.ts"
 
 wait_for_pg() {
   echo "⏳  Waiting for Postgres (db:5432)…"
@@ -10,17 +10,16 @@ wait_for_pg() {
 }
 
 run_migrations() {
+  echo "🔓  Unlocking migrations…"
+  $KNEX migrate:unlock || true
+  
   echo "🔄  Running migrations…"
   $KNEX migrate:latest
 }
 
 seed_if_empty() {
-  echo "🔍  Checking if seeds needed…"
-  ROWS=$(psql "$DATABASE_URL" -Atc "SELECT COUNT(*) FROM chores" || echo 0)
-  if [ "$ROWS" -eq 0 ]; then
-    echo "🌱  Running seeds (empty DB detected)…"
-    $KNEX seed:run
-  fi
+  echo "🌱  Running seeds…"
+  $KNEX seed:run
 }
 
 start_node() {

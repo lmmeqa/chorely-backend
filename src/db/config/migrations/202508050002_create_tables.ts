@@ -151,6 +151,15 @@ export async function up(knex: Knex): Promise<void> {
     t.index(["disputer_email"]);
   });
 
+  // Ensure vote_type enum exists (idempotent) before creating dispute_votes
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vote_type') THEN
+        CREATE TYPE vote_type AS ENUM ('approve', 'reject');
+      END IF;
+    END $$;
+  `);
 
   /* chore_approvals (email-based FK) */// Create dispute_votes table for voting on disputes
   await knex.schema.createTable("dispute_votes", (t) => {

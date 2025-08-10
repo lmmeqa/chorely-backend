@@ -16,8 +16,11 @@ export interface DisputeVoteStatus {
   reject_votes: number;
   total_votes: number;
   required_votes: number;
+  total_eligible_voters: number;
   is_approved: boolean;
   is_rejected: boolean;
+  is_24_hours_passed: boolean;
+  hours_since_creation: number;
   voters: {
     user_email: string;
     vote: VoteType;
@@ -46,11 +49,17 @@ export default class DisputeVote {
           throw new ModelError("CHORE_NOT_FOUND", "Chore not found for dispute", 404);
         }
 
+        // Check if user is in the same home as the dispute
         const userInHome = await db("user_homes")
           .where({ user_email: userEmail, home_id: chore.home_id })
           .first();
         if (!userInHome) {
           throw new ModelError("USER_NOT_IN_HOME", "User is not a member of this home", 403);
+        }
+
+        // Check if user is the one who claimed the chore (they cannot vote)
+        if (chore.user_email === userEmail) {
+          throw new ModelError("USER_CANNOT_VOTE", "The person who claimed the chore cannot vote on disputes", 403);
         }
 
         // Insert or update vote
@@ -111,20 +120,43 @@ export default class DisputeVote {
         .where({ dispute_uuid: disputeUuid })
         .orderBy("created_at", "asc");
 
-      // Get total number of users in the home
+      // Get total number of users in the home (excluding the person who claimed the chore)
       const homeUsers = await db("user_homes").where({ home_id: chore.home_id });
-      const totalHomeUsers = homeUsers.length;
-      const requiredVotes = Math.ceil(totalHomeUsers * 0.5); // 50% threshold
+      const eligibleVoters = homeUsers.filter(user => user.user_email !== chore.user_email);
+      const totalEligibleVoters = eligibleVoters.length;
+      const requiredVotes = Math.ceil(totalEligibleVoters * 0.5); // 50% threshold of eligible voters
 
       // Count votes
       const approveVotes = votes.filter(v => v.vote === "approve").length;
       const rejectVotes = votes.filter(v => v.vote === "reject").length;
       const totalVotes = votes.length;
 
+      // Check if 24 hours have passed since dispute creation
+      const disputeCreated = new Date(dispute.created_at!);
+      const now = new Date();
+      const hoursSinceCreation = (now.getTime() - disputeCreated.getTime()) / (1000 * 60 * 60);
+      const is24HoursPassed = hoursSinceCreation >= 24;
+
       // Determine if dispute should be auto-approved or auto-rejected
-      // Priority: if both approve and reject reach threshold, approve wins (more votes needed to approve)
-      const isApproved = approveVotes >= requiredVotes;
-      const isRejected = rejectVotes >= requiredVotes && !isApproved; // Only reject if not approved
+      let isApproved = false;
+      let isRejected = false;
+
+      if (is24HoursPassed) {
+        // After 24 hours, if not enough approve votes, auto-reject
+        isRejected = approveVotes < requiredVotes;
+        isApproved = !isRejected && approveVotes >= requiredVotes;
+      } else {
+        // Before 24 hours, normal voting logic
+        if (approveVotes >= requiredVotes) {
+          isApproved = true;
+        } else if (rejectVotes >= requiredVotes) {
+          isRejected = true;
+        } else if (approveVotes + rejectVotes >= requiredVotes) {
+          // If we have enough votes but not enough for either side, approve wins in case of tie
+          isApproved = approveVotes >= rejectVotes;
+          isRejected = !isApproved;
+        }
+      }
 
       return {
         dispute_uuid: disputeUuid,
@@ -132,8 +164,11 @@ export default class DisputeVote {
         reject_votes: rejectVotes,
         total_votes: totalVotes,
         required_votes: requiredVotes,
+        total_eligible_voters: totalEligibleVoters,
         is_approved: isApproved,
         is_rejected: isRejected,
+        is_24_hours_passed: is24HoursPassed,
+        hours_since_creation: hoursSinceCreation,
         voters: votes.map(v => ({
           user_email: v.user_email,
           vote: v.vote
@@ -199,7 +234,7 @@ export default class DisputeVote {
         }
       });
     } else if (voteStatus.is_rejected) {
-      // Auto-reject the dispute
+      // Auto-reject the dispute (either by votes or 24-hour timeout)
       await db("disputes").where({ uuid: disputeUuid }).update({ 
         status: "rejected", 
         updated_at: db.fn.now() 

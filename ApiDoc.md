@@ -93,7 +93,14 @@ All endpoints are JSON-only and follow REST conventions.
 
 ### Dispute Voting System
 
-Disputes are resolved through a voting system where family members vote to approve or reject the dispute. When 50% or more of family members vote to approve, the dispute is automatically approved and the chore is reverted.
+Disputes are resolved through a voting system where eligible family members vote to approve or reject the dispute. The person who claimed the chore cannot vote on disputes.
+
+**Voting Rules:**
+- Only family members who did NOT claim the chore can vote
+- 50% of eligible voters must approve for the dispute to be approved
+- If votes are tied, approve wins
+- After 24 hours, if not enough approve votes, the dispute is automatically rejected
+- When approved, the dispute removes points from the chore assignee and reverts the chore to "claimed" status
 
 | Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
@@ -107,8 +114,10 @@ Disputes are resolved through a voting system where family members vote to appro
 - `"reject"` - Vote to reject the dispute (keep chore completed)
 
 **Auto-Resolution:**
-- When 50% or more family members vote "approve", the dispute is automatically approved
-- When 50% or more family members vote "reject", the dispute is automatically rejected
+- When 50% or more eligible voters vote "approve", the dispute is automatically approved
+- When 50% or more eligible voters vote "reject", the dispute is automatically rejected
+- If votes are tied, approve wins
+- After 24 hours, if not enough approve votes, the dispute is automatically rejected
 - Approved disputes remove points from the chore assignee and revert the chore to "claimed" status
 
 ---

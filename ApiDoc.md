@@ -16,6 +16,8 @@ All endpoints are JSON-only and follow REST conventions.
 > **Errors** – every error is returned as<br>`{ "error": "<message>" }` with an appropriate HTTP status.
 > **Body format** – `Content-Type: application/json`.
 
+> Database diagram: see the up-to-date ERD and relations here: [Chorely DB Diagram](https://dbdiagram.io/d/68983724dd90d178653d33e4)
+
 ---
 
 ## 1 · Users

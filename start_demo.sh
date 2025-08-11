@@ -12,6 +12,9 @@ wait_for_pg() {
 run_migrations() {
   echo "🔓  Unlocking migrations…"
   $KNEX migrate:unlock || true
+  echo "🧽  Forcing clean migration state (dropping knex tables if present)…"
+  psql -h db -U postgres -d chorely -v ON_ERROR_STOP=0 -c "DROP TABLE IF EXISTS knex_migrations_lock;" >/dev/null 2>&1 || true
+  psql -h db -U postgres -d chorely -v ON_ERROR_STOP=0 -c "DROP TABLE IF EXISTS knex_migrations;" >/dev/null 2>&1 || true
   
   echo "🔄  Running migrations…"
   $KNEX migrate:latest

@@ -12,6 +12,9 @@ const config: Knex.Config = {
   migrations: {
     directory: "./migrations", // resolves to backend/src/db/migrations
     extension: "ts",
+    // Skip strict validation comparing on-disk files to previously seen names
+    // Useful in demo builds where files may be renamed, merged, or pruned
+    disableMigrationsListValidation: true,
   },
   seeds: {
     directory: "./seeds",

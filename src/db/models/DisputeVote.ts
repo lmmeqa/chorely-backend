@@ -233,15 +233,7 @@ export default class DisputeVote {
       is_24_hours_passed: (new Date().getTime() - new Date(dispute.created_at!).getTime()) / (1000*60*60) >= 24,
     } as any;
     
-    console.log(`Checking dispute ${disputeUuid} status:`, {
-      approve_votes: voteStatus.approve_votes,
-      reject_votes: voteStatus.reject_votes,
-      required_votes: voteStatus.required_votes,
-      total_eligible_voters: voteStatus.total_eligible_voters,
-      is_approved: voteStatus.is_approved,
-      is_rejected: voteStatus.is_rejected,
-      is_24_hours_passed: voteStatus.is_24_hours_passed
-    });
+
     
     if (voteStatus.is_approved) {
       // Auto-approve the dispute
@@ -289,7 +281,7 @@ export default class DisputeVote {
               });
           }
         }
-        console.log(`✅ Auto-approved dispute ${disputeUuid}`);
+
       });
     } else if (voteStatus.is_rejected) {
       // Auto-reject the dispute (either by votes or 24-hour timeout)
@@ -301,10 +293,10 @@ export default class DisputeVote {
         
         // For rejected disputes, ensure the chore remains completed
         // (no need to change chore status since dispute was rejected)
-        console.log(`❌ Auto-rejected dispute ${disputeUuid} - chore remains completed`);
+
       });
     } else {
-      console.log(`⏳ Dispute ${disputeUuid} still pending - not enough votes for resolution`);
+
     }
   }
 } 

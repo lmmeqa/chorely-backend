@@ -46,7 +46,7 @@ export class DisputeTimeoutService {
               updated_at: db.fn.now() 
             });
           
-          console.log(`Auto-rejected dispute ${dispute.uuid} after 24 hours timeout`);
+  
         }
       }
     } catch (error) {

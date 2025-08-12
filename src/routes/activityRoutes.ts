@@ -29,13 +29,6 @@ r.get("/", async (req, res) => {
   }
   
   const results = await Chore.recentActivity(threshold, homeId);
-  console.log('Recent activities raw results:', results.map(r => ({ 
-    id: r.uuid, 
-    name: r.name, 
-    completed_at: r.completed_at,
-    status: r.status 
-  })));
-  
   res.json(results);
 });
 

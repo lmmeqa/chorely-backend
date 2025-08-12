@@ -23,7 +23,17 @@ const seedQueries = [
   "do laundry",
   "dirty bathroom shower tiles",
   "unwashed dishes in sink",
-  "messy bedroom floor"
+  "messy bedroom floor",
+  "taking out trash bin",
+  "dusting shelves",
+  "mopping kitchen floor",
+  "clean bathroom sink shower",
+  "organized closet wardrobe",
+  "laundry washing machine",
+  "sweeping porch",
+  "made bed bedroom",
+  "watering plants indoor",
+  "messy closet clothes floor"
 ];
 
 function slugify(input: string): string {

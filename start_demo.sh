@@ -13,6 +13,9 @@ run_migrations() {
   echo "🔓  Unlocking migrations…"
   $KNEX migrate:unlock || true
   
+  echo "🧹  Rolling back all migrations (demo reset)…"
+  $KNEX migrate:rollback --all || true
+  
   echo "🔄  Running migrations…"
   $KNEX migrate:latest
 }

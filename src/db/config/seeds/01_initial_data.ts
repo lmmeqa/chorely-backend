@@ -15,9 +15,16 @@ const hoursAgo = (hours: number) => {
   return d.toISOString();
 };
 
+// Simple helper that returns local seed image paths
+const img = (query: string) => `/seed/${query.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}.jpg`;
+
+
+
 export async function seed(knex: Knex): Promise<void> {
   // Set timezone for this session
   await knex.raw("SET timezone = 'America/Los_Angeles'");
+
+
   
   // clear in FK-safe order
   await knex("dispute_votes").del().catch(() => {});
@@ -67,6 +74,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: null,
       completed_at: null,
       points: 30,
+      photo_url: img("vacuum living room")
     },
     {
       uuid: uuidv4(),
@@ -80,6 +88,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: null,
       completed_at: null,
       points: 20,
+      photo_url: img("washing dishes kitchen sink")
     },
     {
       uuid: uuidv4(),
@@ -93,6 +102,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: null,
       completed_at: null,
       points: 10,
+      photo_url: img("taking out trash bin")
     },
     {
       uuid: uuidv4(),
@@ -106,6 +116,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: null,
       completed_at: null,
       points: 25,
+      photo_url: img("dusting shelves")
     },
     {
       uuid: uuidv4(),
@@ -119,6 +130,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: null,
       completed_at: null,
       points: 35,
+      photo_url: img("mopping kitchen floor")
     },
 
     // 2 COMPLETED chores (that will be disputed)
@@ -134,6 +146,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: hoursAgo(2),
       completed_at: hoursAgo(4),
       points: 45,
+      photo_url: img("clean bathroom sink shower")
     },
     {
       uuid: uuidv4(),
@@ -147,6 +160,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: hoursAgo(3),
       completed_at: hoursAgo(1),
       points: 60,
+      photo_url: img("organized closet wardrobe")
     },
 
     // CLAIMED chores (in progress)
@@ -162,6 +176,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: hoursAgo(1),
       completed_at: null,
       points: 90,
+      photo_url: img("laundry washing machine")
     },
     {
       uuid: uuidv4(),
@@ -175,6 +190,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: hoursAgo(30),
       completed_at: null,
       points: 15,
+      photo_url: img("sweeping porch")
     },
 
     // COMPLETED chores (approved)
@@ -190,6 +206,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: hoursAgo(4),
       completed_at: hoursAgo(3),
       points: 10,
+      photo_url: img("made bed bedroom")
     },
     {
       uuid: uuidv4(),
@@ -203,6 +220,7 @@ export async function seed(knex: Knex): Promise<void> {
       claimed_at: hoursAgo(5),
       completed_at: hoursAgo(4),
       points: 20,
+      photo_url: img("watering plants indoor")
     },
   ];
   await knex("chores").insert(chores);
@@ -349,7 +367,7 @@ export async function seed(knex: Knex): Promise<void> {
       chore_id: choreByName["Clean Bathroom"].uuid,
       disputer_email: userByEmail["charlie@demo.com"].email,
       reason: "The bathroom wasn't cleaned properly. There's still soap scum in the shower and the toilet wasn't disinfected.",
-      image_url: null,
+      image_url: img("dirty bathroom shower tiles"),
       status: "pending",
       created_at: hoursAgo(2),
       updated_at: new Date().toISOString(),
@@ -359,7 +377,7 @@ export async function seed(knex: Knex): Promise<void> {
       chore_id: choreByName["Organize Closet"].uuid,
       disputer_email: userByEmail["diana@demo.com"].email,
       reason: "The closet organization is incomplete. Clothes are still mixed up and there's no proper categorization.",
-      image_url: null,
+      image_url: img("messy closet clothes floor"),
       status: "pending",
       created_at: hoursAgo(1),
       updated_at: new Date().toISOString(),

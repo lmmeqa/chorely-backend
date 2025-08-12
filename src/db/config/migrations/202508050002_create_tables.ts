@@ -89,6 +89,7 @@ export async function up(knex: Knex): Promise<void> {
     t.timestamp("claimed_at").nullable().defaultTo(null);
     t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
     t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.string("photo_url").nullable();
 
     t.index(["home_id"]);
     t.index(["status"]);
@@ -148,6 +149,7 @@ export async function up(knex: Knex): Promise<void> {
     t.specificType("status", "dispute_status").notNullable().defaultTo("pending");
     t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
     t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
+    t.string("photo_url").nullable();
 
     t.index(["status"]);
     t.index(["chore_id"]);

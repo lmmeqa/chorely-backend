@@ -1,4 +1,7 @@
 import { Router } from "express";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import {
   getById,
   createChore,
@@ -20,7 +23,10 @@ r.get("/user", listUserChores);   // GET /chores/user/:email?status=a,b
 
   r.patch("/:uuid/approve",  approveChore);       // PATCH /chores/:uuid/approve
   r.patch("/:uuid/claim",    claimChore);         // PATCH /chores/:uuid/claim
-  r.patch("/:uuid/complete", completeChore);      // PATCH /chores/:uuid/complete
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  const upload = multer({ dest: uploadDir, limits: { fileSize: 10 * 1024 * 1024 } });
+  r.patch("/:uuid/complete", upload.single('image'), completeChore);      // PATCH /chores/:uuid/complete
   r.patch("/:uuid/verify",   (req, res) => {      // PATCH /chores/:uuid/verify (DEPRECATED)
     res.status(410).json({
       error: "The /verify endpoint has been deprecated. Please use /complete instead.",

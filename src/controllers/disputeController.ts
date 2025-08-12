@@ -1,6 +1,9 @@
 import { controller } from "../middleware";
 import { Dispute } from "../db/models";
 import { db } from "../db/models";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 
 export const list = controller(async (req, res) => {
@@ -18,7 +21,8 @@ export const list = controller(async (req, res) => {
       "chores.name as chore_name",
       "chores.description as chore_description",
       "chores.icon as chore_icon",
-      "chores.user_email as chore_user_email"
+      "chores.user_email as chore_user_email",
+      "chores.photo_url as chore_photo_url"
     )
     .leftJoin("chores", "chores.uuid", "disputes.chore_id")
     .orderBy("disputes.created_at", "desc");
@@ -35,13 +39,20 @@ export const getById = controller(async (req, res) => {
   res.json(dispute);
 });
 
+// Multer setup for dispute image uploads
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+export const disputeUpload = multer({ dest: uploadDir, limits: { fileSize: 10 * 1024 * 1024 } });
+
 export const create = controller(async (req, res) => {
-  const { choreId, reason, imageUrl, disputerEmail } = req.body;
+  const { choreId, reason, disputerEmail } = req.body;
+  const file = (req as any).file as Express.Multer.File | undefined;
+  const photoUrl = file ? `/uploads/${path.basename(file.path)}` : undefined;
   const row = await Dispute.create({ 
     uuid: uuidv4(), 
     chore_id: choreId, 
     reason, 
-    image_url: imageUrl, 
+    image_url: photoUrl || null, 
     disputer_email: disputerEmail,
     status: "pending"
   });

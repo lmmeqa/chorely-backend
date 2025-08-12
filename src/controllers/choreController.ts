@@ -1,5 +1,8 @@
 import { controller } from "../middleware";
-import { Chore, User } from "../db/models";
+import { Chore, User, db } from "../db/models";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 export const createChore = controller(async (req, res) => {
   const chore = await Chore.create(req.body); // expects { name, description, …, home_id }
@@ -36,6 +39,11 @@ export const verifyChore = controller(async (req, res) => {
 });
 
 export const completeChore = controller(async (req, res) => {
+  const file = (req as any).file as Express.Multer.File | undefined;
+  if (file) {
+    const uploadPath = `/uploads/${path.basename(file.path)}`;
+    await db("chores").where({ uuid: req.params.uuid }).update({ photo_url: uploadPath });
+  }
   await Chore.verify(req.params.uuid); // verify and complete are the same action
   res.status(204).end();
 });

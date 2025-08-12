@@ -1,3 +1,4 @@
 node_modules
 #.env (who cares)
 /dist
+uploads/

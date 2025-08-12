@@ -18,13 +18,23 @@ import activityRoutes from "./routes/activityRoutes";
 import todoRoutes from "./routes/todoRoutes";
 import { errorHandler } from "./middleware";
 import { DisputeTimeoutService } from "./services/disputeTimeoutService";
+import path from "path";
+import fs from "fs";
 
 
 const app = express();
 
+// ─────── Ensure uploads directory exists ───────
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // ─────── Global middleware ───────
 app.use(cors());           // allow cross-origin frontend <-> API
 app.use(express.json());   // parse JSON bodies into req.body
+app.use('/uploads', express.static(uploadsDir)); // Serve static files from 'uploads' directory
+app.use('/seed', express.static(path.join(__dirname, '..', 'static', 'seed'))); // Serve static files from 'static/seed' directory
 
 // ─────── Feature routers ───────
 app.use("/chores", choreRoutes);  // all chore endpoints

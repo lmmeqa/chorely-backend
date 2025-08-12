@@ -1,26 +1,18 @@
 import { Knex } from "knex";
 import { v4 as uuidv4 } from "uuid";
 
-// Helper function to create Pacific timezone timestamps
+// Helper function to create future timestamps
 const minutesFromNow = (mins: number) => {
   const d = new Date();
   d.setMinutes(d.getMinutes() + mins);
-  // Convert to Pacific timezone and format as ISO string
-  const pacificTime = new Date(d.toLocaleString("en-US", {
-    timeZone: "America/Los_Angeles"
-  }));
-  return pacificTime.toISOString();
+  return d.toISOString();
 };
 
-// Helper function for past timestamps in Pacific time
+// Helper function for past timestamps
 const hoursAgo = (hours: number) => {
   const d = new Date();
   d.setHours(d.getHours() - hours);
-  // Convert to Pacific timezone and format as ISO string
-  const pacificTime = new Date(d.toLocaleString("en-US", {
-    timeZone: "America/Los_Angeles"
-  }));
-  return pacificTime.toISOString();
+  return d.toISOString();
 };
 
 export async function seed(knex: Knex): Promise<void> {
@@ -28,7 +20,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex.raw("SET timezone = 'America/Los_Angeles'");
   
   // clear in FK-safe order
-  await knex("dispute_votes").del().catch(() => {}); // Add dispute_votes cleanup
+  await knex("dispute_votes").del().catch(() => {});
   await knex("chore_approvals").del().catch(() => {});
   await knex("todo_items").del().catch(() => {});
   await knex("disputes").del().catch(() => {});
@@ -37,237 +29,303 @@ export async function seed(knex: Knex): Promise<void> {
   await knex("users").del().catch(() => {});
   await knex("home").del().catch(() => {});
 
-  /* home (singular, no address column) */
-  const homes = [
-    { id: uuidv4(), name: "Main House" },
-    { id: uuidv4(), name: "Summer Cabin" },
-    { id: uuidv4(), name: "Downtown Apartment" },
-  ];
-  await knex("home").insert(homes);
-  const homeByName = Object.fromEntries(homes.map((h) => [h.name, h]));
+  /* Create one demo house */
+  const demoHouse = { id: uuidv4(), name: "Demo House" };
+  await knex("home").insert(demoHouse);
 
-  /* users (now requires name; email used as FK) */
+  /* Create demo users - all in the same house */
   const users = [
-    {  email: "user@example.com", name: "John Doe" },
-    { email: "roommate@example.com", name: "Jane Smith" },
-    {email: "family@example.com", name: "Mike Johnson" },
+    { email: "alice@demo.com", name: "Alice Johnson" },
+    { email: "bob@demo.com", name: "Bob Smith" },
+    { email: "charlie@demo.com", name: "Charlie Brown" },
+    { email: "diana@demo.com", name: "Diana Prince" },
   ];
   await knex("users").insert(users);
   const userByEmail = Object.fromEntries(users.map((u) => [u.email, u]));
 
-  /* user_homes (email-based FK) */
-  await knex("user_homes").insert([
-    { user_email: "user@example.com", home_id: homeByName["Main House"].id },
-    { user_email: "user@example.com", home_id: homeByName["Summer Cabin"].id },
-    { user_email: "roommate@example.com", home_id: homeByName["Main House"].id },
-    { user_email: "family@example.com", home_id: homeByName["Summer Cabin"].id },
-    { user_email: "family@example.com", home_id: homeByName["Downtown Apartment"].id },
-  ]);
+  /* Add all users to the demo house */
+  await knex("user_homes").insert(
+    users.map(user => ({
+      user_email: user.email,
+      home_id: demoHouse.id,
+      points: 0 // Start with 0 points, will be updated after chores are created
+    }))
+  );
 
-  /* chores (time -> timestamptz; user_email instead of user_id; add completed_at for completed chores) */
+  /* Create comprehensive chore data */
   const chores = [
+    // 5 UNCLAIMED chores
     {
       uuid: uuidv4(),
-      name: "Sorting Boxes",
-      description: "This is an unapproved chore.",
-      time: minutesFromNow(75), // 1h 15m
-      icon: "package",
-      status: "unapproved",
-      user_email: null,
-      home_id: homeByName["Main House"].id,
-      claimed_at: null,
-      completed_at: null,
-    },
-    {
-      uuid: uuidv4(),
-      name: "Organizing",
-      description: "Organize the living-room shelves.",
-      time: minutesFromNow(75),
-      icon: "package",
+      name: "Vacuum Living Room",
+      description: "Vacuum the entire living room including under furniture.",
+      time: minutesFromNow(30),
+      icon: "wind",
       status: "unclaimed",
       user_email: null,
-      home_id: homeByName["Main House"].id,
+      home_id: demoHouse.id,
       claimed_at: null,
       completed_at: null,
+      points: 30,
     },
     {
       uuid: uuidv4(),
-      name: "Dusting",
-      description: "Dust all surfaces in the main room.",
-      time: minutesFromNow(25),
-      icon: "feather",
-      status: "unclaimed",
-      user_email: null,
-      home_id: homeByName["Main House"].id,
-      claimed_at: null,
-      completed_at: null,
-    },
-    {
-      uuid: uuidv4(),
-      name: "Mopping",
-      description: "Mop the kitchen and bathroom floors.",
-      time: minutesFromNow(35),
+      name: "Wash Dishes",
+      description: "Wash and dry all dishes in the sink.",
+      time: minutesFromNow(20),
       icon: "droplets",
       status: "unclaimed",
       user_email: null,
-      home_id: homeByName["Main House"].id,
+      home_id: demoHouse.id,
       claimed_at: null,
       completed_at: null,
+      points: 20,
     },
     {
       uuid: uuidv4(),
-      name: "Taking out trash",
-      description: "Empty all trash cans and take out the garbage.",
+      name: "Take Out Trash",
+      description: "Empty all trash cans and take to the curb.",
       time: minutesFromNow(10),
       icon: "trash-2",
       status: "unclaimed",
       user_email: null,
-      home_id: homeByName["Main House"].id,
+      home_id: demoHouse.id,
       claimed_at: null,
       completed_at: null,
+      points: 10,
     },
     {
       uuid: uuidv4(),
-      name: "Sweeping",
-      description: "Sweep the front porch.",
-      time: minutesFromNow(730), // 12h 10m
-      icon: "brush",
-      status: "claimed",
-      user_email: userByEmail["user@example.com"].email,
-      home_id: homeByName["Main House"].id,
-      claimed_at: hoursAgo(3), // Claimed 3 hours ago
+      name: "Dust Shelves",
+      description: "Dust all shelves and surfaces in the house.",
+      time: minutesFromNow(25),
+      icon: "feather",
+      status: "unclaimed",
+      user_email: null,
+      home_id: demoHouse.id,
+      claimed_at: null,
       completed_at: null,
+      points: 25,
     },
     {
       uuid: uuidv4(),
-      name: "Washing Dishes",
-      description: "Wash and dry all dishes in the sink.",
-      time: minutesFromNow(30),
+      name: "Mop Kitchen",
+      description: "Mop the kitchen floor thoroughly.",
+      time: minutesFromNow(35),
       icon: "droplets",
-      status: "claimed",
-      user_email: userByEmail["user@example.com"].email,
-      home_id: homeByName["Main House"].id,
-      claimed_at: hoursAgo(1), // Claimed 1 hour ago
+      status: "unclaimed",
+      user_email: null,
+      home_id: demoHouse.id,
+      claimed_at: null,
       completed_at: null,
+      points: 35,
+    },
+
+    // 2 COMPLETED chores (that will be disputed)
+    {
+      uuid: uuidv4(),
+      name: "Clean Bathroom",
+      description: "Clean the bathroom including toilet, sink, and shower.",
+      time: minutesFromNow(45),
+      icon: "droplets",
+      status: "complete",
+      user_email: userByEmail["alice@demo.com"].email,
+      home_id: demoHouse.id,
+      claimed_at: hoursAgo(2),
+      completed_at: hoursAgo(4),
+      points: 45,
     },
     {
       uuid: uuidv4(),
-      name: "Vacuum",
-      description: "Vacuum the entire house.",
-      time: minutesFromNow(45),
-      icon: "wind",
+      name: "Organize Closet",
+      description: "Organize the master bedroom closet.",
+      time: minutesFromNow(60),
+      icon: "package",
       status: "complete",
-      user_email: userByEmail["user@example.com"].email,
-      home_id: homeByName["Summer Cabin"].id,
-      claimed_at: hoursAgo(4), // Claimed 4 hours ago
-      completed_at: hoursAgo(2),
+      user_email: userByEmail["bob@demo.com"].email,
+      home_id: demoHouse.id,
+      claimed_at: hoursAgo(3),
+      completed_at: hoursAgo(1),
+      points: 60,
     },
+
+    // CLAIMED chores (in progress)
     {
       uuid: uuidv4(),
       name: "Laundry",
       description: "Wash, dry, and fold one load of laundry.",
-      time: minutesFromNow(120), // 2h
+      time: minutesFromNow(90),
       icon: "shirt",
+      status: "claimed",
+      user_email: userByEmail["charlie@demo.com"].email,
+      home_id: demoHouse.id,
+      claimed_at: hoursAgo(1),
+      completed_at: null,
+      points: 90,
+    },
+    {
+      uuid: uuidv4(),
+      name: "Sweep Porch",
+      description: "Sweep the front and back porches.",
+      time: minutesFromNow(15),
+      icon: "brush",
+      status: "claimed",
+      user_email: userByEmail["diana@demo.com"].email,
+      home_id: demoHouse.id,
+      claimed_at: hoursAgo(30),
+      completed_at: null,
+      points: 15,
+    },
+
+    // COMPLETED chores (approved)
+    {
+      uuid: uuidv4(),
+      name: "Make Bed",
+      description: "Make all beds in the house.",
+      time: minutesFromNow(10),
+      icon: "bed",
       status: "complete",
-      user_email: userByEmail["user@example.com"].email,
-      home_id: homeByName["Summer Cabin"].id,
-      claimed_at: hoursAgo(3), // Claimed 3 hours ago
-      completed_at: hoursAgo(1),
+      user_email: userByEmail["alice@demo.com"].email,
+      home_id: demoHouse.id,
+      claimed_at: hoursAgo(4),
+      completed_at: hoursAgo(3),
+      points: 10,
+    },
+    {
+      uuid: uuidv4(),
+      name: "Water Plants",
+      description: "Water all indoor and outdoor plants.",
+      time: minutesFromNow(20),
+      icon: "droplets",
+      status: "complete",
+      user_email: userByEmail["bob@demo.com"].email,
+      home_id: demoHouse.id,
+      claimed_at: hoursAgo(5),
+      completed_at: hoursAgo(4),
+      points: 20,
     },
   ];
   await knex("chores").insert(chores);
   const choreByName = Object.fromEntries(chores.map((c) => [c.name, c]));
 
-  /* todo items */
+  // Award points for completed chores
+  const completedChores = chores.filter(c => c.status === "complete");
+  for (const chore of completedChores) {
+    if (chore.user_email && chore.points > 0) {
+      let pointsToAward = chore.points;
+      
+      // Calculate dynamic points based on when the chore was claimed
+      if (chore.claimed_at) {
+        const created = new Date(); // Use current time as created time for seed data
+        const claimed = new Date(chore.claimed_at);
+        const hoursUnclaimed = (claimed.getTime() - created.getTime()) / (1000 * 60 * 60);
+        const bonusMultiplier = Math.min(1 + (hoursUnclaimed / 24) * 0.1, 2.0);
+        pointsToAward = Math.round(chore.points * bonusMultiplier);
+      }
+      
+      await knex("user_homes")
+        .where({ home_id: chore.home_id, user_email: chore.user_email })
+        .increment("points", pointsToAward);
+    }
+  }
+
+  /* Create todo items for chores */
   const todoData: [string, [string, string][]][] = [
     [
-      "Sorting Boxes",
+      "Vacuum Living Room",
       [
-        ["Step 1", "Detailed description for step 1."],
-        ["Step 2", "Detailed description for step 2."],
+        ["Clear floor", "Remove any items from the floor"],
+        ["Vacuum main area", "Vacuum the open floor space"],
+        ["Vacuum under furniture", "Use attachments to reach under couches and tables"],
+        ["Empty vacuum", "Empty the vacuum cleaner bag/canister"],
       ],
     ],
     [
-      "Organizing",
+      "Wash Dishes",
       [
-        ["Clear shelves", "Remove all items from the shelves."],
-        ["Sort items", "Group items into categories: keep, donate, trash."],
-        ["Wipe shelves", "Clean the shelves with a damp cloth."],
-        [
-          "Arrange items",
-          "Place items back on the shelves in an organized manner.",
-        ],
+        ["Scrape plates", "Remove leftover food from dishes"],
+        ["Wash with soap", "Use hot, soapy water to wash each dish"],
+        ["Rinse thoroughly", "Rinse off all soap suds"],
+        ["Dry and put away", "Use a towel or drying rack"],
       ],
     ],
     [
-      "Dusting",
+      "Take Out Trash",
       [
-        ["Gather supplies", "Get a duster or microfiber cloth."],
-        ["Dust high surfaces", "Start from top to bottom."],
-        ["Dust furniture", "Dust tables, shelves, and other furniture."],
+        ["Collect trash", "Gather trash from all bins in the house"],
+        ["Replace liners", "Put new liners in all the trash cans"],
+        ["Take out to curb", "Take the main trash bag to the outdoor bin/curb"],
       ],
     ],
     [
-      "Mopping",
+      "Dust Shelves",
       [
-        ["Sweep/vacuum first", "Remove loose dirt and debris."],
-        [
-          "Prepare mop solution",
-          "Fill a bucket with water and cleaning solution.",
-        ],
-        ["Mop the floors", "Mop from the farthest corner towards the door."],
-        ["Let it dry", "Allow the floor to air dry completely."],
+        ["Gather supplies", "Get a duster or microfiber cloth"],
+        ["Dust high surfaces", "Start from top to bottom"],
+        ["Dust furniture", "Dust tables, shelves, and other furniture"],
       ],
     ],
     [
-      "Taking out trash",
+      "Mop Kitchen",
       [
-        ["Collect trash", "Gather trash from all bins in the house."],
-        ["Replace liners", "Put new liners in all the trash cans."],
-        [
-          "Take out to curb",
-          "Take the main trash bag to the outdoor bin/curb.",
-        ],
+        ["Sweep first", "Remove loose dirt and debris"],
+        ["Prepare mop solution", "Fill a bucket with water and cleaning solution"],
+        ["Mop the floor", "Mop from the farthest corner towards the door"],
+        ["Let it dry", "Allow the floor to air dry completely"],
       ],
     ],
     [
-      "Sweeping",
+      "Clean Bathroom",
       [
-        ["Get broom and dustpan", "Grab the necessary tools."],
-        ["Sweep into a pile", "Sweep all debris into one area."],
-        [
-          "Dispose of debris",
-          "Use the dustpan to collect and throw away the pile.",
-        ],
+        ["Gather supplies", "Get cleaning supplies and gloves"],
+        ["Clean toilet", "Clean inside and outside of toilet"],
+        ["Clean sink", "Clean sink and countertop"],
+        ["Clean shower", "Clean shower walls and floor"],
       ],
     ],
     [
-      "Washing Dishes",
+      "Organize Closet",
       [
-        ["Scrape plates", "Remove leftover food from dishes."],
-        ["Wash with soap", "Use hot, soapy water to wash each dish."],
-        ["Rinse thoroughly", "Rinse off all soap suds."],
-        ["Dry and put away", "Use a towel or drying rack."],
-      ],
-    ],
-    [
-      "Vacuum",
-      [
-        [
-          "Clear the floor",
-          "Pick up any large items or clutter from the floor.",
-        ],
-        ["Vacuum room by room", "Work systematically through the house."],
-        ["Use attachments", "Use attachments for corners and edges."],
+        ["Remove everything", "Take all items out of the closet"],
+        ["Sort items", "Group items into categories: keep, donate, trash"],
+        ["Clean closet", "Wipe down shelves and vacuum floor"],
+        ["Arrange items", "Place items back in an organized manner"],
       ],
     ],
     [
       "Laundry",
       [
-        ["Sort clothes", "Separate lights, darks, and colors."],
-        ["Wash load", "Put one load in the washing machine with detergent."],
-        ["Dry load", "Transfer washed clothes to the dryer."],
-        ["Fold and put away", "Fold the dry clothes and put them away."],
+        ["Sort clothes", "Separate lights, darks, and colors"],
+        ["Wash load", "Put one load in the washing machine with detergent"],
+        ["Dry load", "Transfer washed clothes to the dryer"],
+        ["Fold and put away", "Fold the dry clothes and put them away"],
+      ],
+    ],
+    [
+      "Sweep Porch",
+      [
+        ["Get broom and dustpan", "Grab the necessary tools"],
+        ["Sweep front porch", "Sweep all debris from the front porch"],
+        ["Sweep back porch", "Sweep all debris from the back porch"],
+        ["Dispose of debris", "Use the dustpan to collect and throw away the pile"],
+      ],
+    ],
+    [
+      "Make Bed",
+      [
+        ["Strip old sheets", "Remove old sheets and pillowcases"],
+        ["Put on fitted sheet", "Put on the fitted sheet"],
+        ["Put on flat sheet", "Put on the flat sheet and tuck in"],
+        ["Add pillows", "Add pillows and arrange them nicely"],
+      ],
+    ],
+    [
+      "Water Plants",
+      [
+        ["Check soil", "Check if soil is dry before watering"],
+        ["Water indoor plants", "Water all indoor plants"],
+        ["Water outdoor plants", "Water all outdoor plants"],
+        ["Clean up", "Wipe up any spilled water"],
       ],
     ],
   ];
@@ -284,62 +342,44 @@ export async function seed(knex: Knex): Promise<void> {
 
   await knex("todo_items").insert(todoRows);
 
-  /* disputes (incorporating mock.ts data while honoring DB FKs) */
-  // mock-like disputes; map to existing users/emails and chores
-  const mockDisputes = [
+  /* Create 2 active disputes */
+  const disputes = [
     {
-      // from mock: "Kitchen Cleaning" (no exact chore in seed) → fall back to an existing chore
       uuid: uuidv4(),
-      choreName: "Kitchen Cleaning",
-      reason: "Not cleaned properly",
-      disputer_email: "user@example.com", // John
-      image_url: null as string | null,
-      status: "pending" as const,
-      created_at: "2024-01-15T10:30:00Z",
+      chore_id: choreByName["Clean Bathroom"].uuid,
+      disputer_email: userByEmail["charlie@demo.com"].email,
+      reason: "The bathroom wasn't cleaned properly. There's still soap scum in the shower and the toilet wasn't disinfected.",
+      image_url: null,
+      status: "pending",
+      created_at: hoursAgo(2),
+      updated_at: new Date().toISOString(),
     },
     {
       uuid: uuidv4(),
-      choreName: "Dusting", // exact match in seed
-      reason: "Incomplete dusting",
-      disputer_email: "roommate@example.com", // Jane
-      image_url: null as string | null,
-      status: "pending" as const,
-      created_at: "2024-01-14T15:45:00Z",
+      chore_id: choreByName["Organize Closet"].uuid,
+      disputer_email: userByEmail["diana@demo.com"].email,
+      reason: "The closet organization is incomplete. Clothes are still mixed up and there's no proper categorization.",
+      image_url: null,
+      status: "pending",
+      created_at: hoursAgo(1),
+      updated_at: new Date().toISOString(),
     },
   ];
 
-  const resolveChoreId = (name: string) =>
-    (choreByName[name] ? choreByName[name].uuid : choreByName["Dusting"].uuid);
+  await knex("disputes").insert(disputes);
 
-  const disputeRows = mockDisputes.map((d) => ({
-    uuid: d.uuid,
-    chore_id: resolveChoreId(d.choreName),
-    disputer_email: d.disputer_email,
-    reason: d.reason,
-    image_url: d.image_url,
-    status: d.status,
-    created_at: d.created_at,
-    updated_at: new Date().toISOString(),
-  }));
-
-  await knex("disputes").insert(disputeRows);
-
-  /* dispute votes - example voting data */
-  // Get the first dispute for voting examples
-  const firstDispute = disputeRows[0];
-  
+  /* Create dispute votes - only one vote per dispute so they don't auto-resolve */
   const disputeVotes = [
     {
-      dispute_uuid: firstDispute.uuid,
-      user_email: "roommate@example.com", // Jane votes to approve the dispute
-      vote: "approve" as const,
+      dispute_uuid: disputes[0].uuid,
+      user_email: userByEmail["alice@demo.com"].email, // Alice votes to approve
+      vote: "approve",
     },
     {
-      dispute_uuid: firstDispute.uuid,
-      user_email: "family@example.com", // Mike votes to reject the dispute
-      vote: "reject" as const,
+      dispute_uuid: disputes[1].uuid,
+      user_email: userByEmail["alice@demo.com"].email, // Alice votes to approve
+      vote: "approve",
     },
-    // Note: user@example.com (John) is the disputer, so they don't vote on their own dispute
   ];
 
   await knex("dispute_votes").insert(disputeVotes);

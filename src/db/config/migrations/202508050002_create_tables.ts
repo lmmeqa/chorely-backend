@@ -93,6 +93,10 @@ export async function up(knex: Knex): Promise<void> {
     t.index(["home_id"]);
     t.index(["status"]);
     t.index(["user_email"]);
+    // Indexes to accelerate activity queries
+    t.index(["completed_at"], "idx_chores_completed_at");
+    t.index(["status", "completed_at"], "idx_chores_status_completed_at");
+    t.index(["home_id", "status", "completed_at"], "idx_chores_home_status_completed_at");
   });
 
   /* todo_items */

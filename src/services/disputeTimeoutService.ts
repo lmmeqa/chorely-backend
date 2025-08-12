@@ -2,6 +2,8 @@ import { db } from "../db/models";
 import { DisputeVote } from "../db/models";
 
 export class DisputeTimeoutService {
+  private static timeoutInterval: NodeJS.Timeout | null = null;
+
   /**
    * Check for disputes that have passed 24 hours and auto-reject them if they don't have enough approve votes
    */
@@ -56,12 +58,27 @@ export class DisputeTimeoutService {
    * Start the timeout checking service (runs every hour)
    */
   static startTimeoutService(): void {
+    // Clear any existing interval to prevent memory leaks
+    if (this.timeoutInterval) {
+      clearInterval(this.timeoutInterval);
+    }
+    
     // Check every hour
-    setInterval(() => {
+    this.timeoutInterval = setInterval(() => {
       this.checkTimeoutDisputes();
     }, 60 * 60 * 1000); // 1 hour in milliseconds
     
     // Also check immediately on startup
     this.checkTimeoutDisputes();
+  }
+
+  /**
+   * Stop the timeout checking service
+   */
+  static stopTimeoutService(): void {
+    if (this.timeoutInterval) {
+      clearInterval(this.timeoutInterval);
+      this.timeoutInterval = null;
+    }
   }
 } 

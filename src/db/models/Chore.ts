@@ -41,33 +41,38 @@ export default class Chore {
   static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "claimed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
-        let createdChore: ChoreRow;
-        
-        await db.transaction(async (trx) => {
-          // Create the chore
-          const result = await trx<ChoreRow>("chores")
-            .insert({ ...data, status: "unapproved" })
-            .returning("*");
-          
-          createdChore = result[0];
-          
-          // Generate todos using GPT API
-          const generatedTodos = await GptService.generateTodosForChore(data.name, data.description);
-          
-          // Create todo items in database using the transaction
-          const todoPromises = generatedTodos.map((todo: GeneratedTodo, index: number) => 
-            trx<TodoRow>("todo_items").insert({
-              chore_id: createdChore.uuid,
-              name: todo.name,
-              description: todo.description,
-              order: index
-            }).returning("*")
-          );
-          
-          await Promise.all(todoPromises);
-        });
-        
-        return formatRowTimestamps(createdChore!);
+        // Create the chore first (fast, no external calls)
+        const [createdChore] = await db<ChoreRow>("chores")
+          .insert({ ...data, status: "unapproved" })
+          .returning("*");
+
+        // Kick off todo generation asynchronously AFTER commit so we don't block the request
+        (async () => {
+          try {
+            const generatedTodos = await GptService.generateTodosForChore(
+              data.name,
+              data.description
+            );
+            if (!generatedTodos || generatedTodos.length === 0) return;
+
+            await db.transaction(async (trx) => {
+              const todoInserts = generatedTodos.map((todo: GeneratedTodo, index: number) =>
+                trx<TodoRow>("todo_items").insert({
+                  chore_id: createdChore.uuid,
+                  name: todo.name,
+                  description: todo.description,
+                  order: index,
+                })
+              );
+              await Promise.all(todoInserts);
+            });
+          } catch (err) {
+            // Log and continue; creation of chore should not fail due to todo generation
+            console.error("Failed to generate/insert todos for chore", createdChore.uuid, err);
+          }
+        })();
+
+        return formatRowTimestamps(createdChore);
       } catch (e: any) {
         throw mapFk(e, "Failed to create chore");
       }
@@ -102,7 +107,7 @@ export default class Chore {
   }
 
   static async forUser(email: string, homeId: string): Promise<ChoreRow[]> {
-    const results = await db<ChoreRow>("chores").where({ user_email: email, home_id: homeId }).whereIn("status", ["claimed", "complete"]);
+    const results = await db<ChoreRow>("chores").where({ user_email: email, home_id: homeId }).whereIn("status", ["claimed"]);
     return results.map(formatRowTimestamps);
   }
 
@@ -170,11 +175,23 @@ export default class Chore {
     }, "Failed to complete chore");
   }
 
-  static recentActivity(threshold: Date) {
-    return db<ChoreRow>("chores")
-      .where("completed_at", ">=", threshold)
-      .where("status", "complete")
-      .orderBy("completed_at", "desc")
-      .limit(50);
+  static async recentActivity(threshold: Date, homeId?: string) {
+    // Use a more efficient query that excludes pending disputes directly, and optionally filter by home
+    const q = db<ChoreRow>("chores")
+      .where("chores.completed_at", ">=", threshold)
+      .where("chores.status", "complete")
+      .whereNotExists(function () {
+        this.select("*")
+          .from("disputes")
+          .whereRaw("disputes.chore_id = chores.uuid")
+          .where("disputes.status", "pending");
+      });
+
+    if (homeId) {
+      q.andWhere("chores.home_id", homeId);
+    }
+
+    const results = await q.orderBy("chores.completed_at", "desc").limit(50);
+    return results.map(formatRowTimestamps);
   }
 }

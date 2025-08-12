@@ -174,6 +174,9 @@ export default class DisputeVote {
         }
       }
 
+      // IMPORTANT: Do not auto-resolve here to avoid mutual recursion
+      // Resolution is triggered from vote/removeVote flows only
+
       return {
         dispute_uuid: disputeUuid,
         approve_votes: approveVotes,
@@ -207,7 +210,38 @@ export default class DisputeVote {
   }
 
   private static async checkAndUpdateDisputeStatus(disputeUuid: string, homeId: string): Promise<void> {
-    const voteStatus = await this.getVoteStatus(disputeUuid);
+    // Re-compute status locally to avoid calling getVoteStatus (prevents recursion)
+    const dispute = await db("disputes").where({ uuid: disputeUuid }).first();
+    if (!dispute) return;
+    const chore = await db("chores").where({ uuid: dispute.chore_id }).first();
+    if (!chore) return;
+
+    const votes = await db<DisputeVoteRow>("dispute_votes").where({ dispute_uuid: disputeUuid });
+    const homeUsers = await db("user_homes").where({ home_id: chore.home_id });
+    const eligibleVoters = homeUsers.filter((u: any) => u.user_email !== chore.user_email);
+    const requiredVotes = Math.ceil(eligibleVoters.length * 0.5);
+    const approveVotes = votes.filter(v => v.vote === "approve").length;
+    const rejectVotes = votes.filter(v => v.vote === "reject").length;
+
+    const voteStatus = {
+      approve_votes: approveVotes,
+      reject_votes: rejectVotes,
+      required_votes: requiredVotes,
+      total_eligible_voters: eligibleVoters.length,
+      is_approved: approveVotes >= requiredVotes,
+      is_rejected: rejectVotes >= requiredVotes,
+      is_24_hours_passed: (new Date().getTime() - new Date(dispute.created_at!).getTime()) / (1000*60*60) >= 24,
+    } as any;
+    
+    console.log(`Checking dispute ${disputeUuid} status:`, {
+      approve_votes: voteStatus.approve_votes,
+      reject_votes: voteStatus.reject_votes,
+      required_votes: voteStatus.required_votes,
+      total_eligible_voters: voteStatus.total_eligible_voters,
+      is_approved: voteStatus.is_approved,
+      is_rejected: voteStatus.is_rejected,
+      is_24_hours_passed: voteStatus.is_24_hours_passed
+    });
     
     if (voteStatus.is_approved) {
       // Auto-approve the dispute
@@ -234,10 +268,17 @@ export default class DisputeVote {
               pointsToRemove = Math.round(chore.points * bonusMultiplier);
             }
             
-            // Remove the dynamic points from the user
-            await trx("user_homes")
+            // Remove the dynamic points from the user, but don't go below 0
+            const currentUser = await trx("user_homes")
               .where({ home_id: chore.home_id, user_email: chore.user_email })
-              .decrement("points", pointsToRemove);
+              .first();
+            
+            if (currentUser) {
+              const newPoints = Math.max(0, currentUser.points - pointsToRemove);
+              await trx("user_homes")
+                .where({ home_id: chore.home_id, user_email: chore.user_email })
+                .update({ points: newPoints });
+            }
             
             // Reverse chore completion: change status back to "claimed" and clear completed_at
             await trx("chores")
@@ -248,13 +289,22 @@ export default class DisputeVote {
               });
           }
         }
+        console.log(`✅ Auto-approved dispute ${disputeUuid}`);
       });
     } else if (voteStatus.is_rejected) {
       // Auto-reject the dispute (either by votes or 24-hour timeout)
-      await db("disputes").where({ uuid: disputeUuid }).update({ 
-        status: "rejected", 
-        updated_at: db.fn.now() 
+      await db.transaction(async (trx) => {
+        await trx("disputes").where({ uuid: disputeUuid }).update({ 
+          status: "rejected", 
+          updated_at: trx.fn.now() 
+        });
+        
+        // For rejected disputes, ensure the chore remains completed
+        // (no need to change chore status since dispute was rejected)
+        console.log(`❌ Auto-rejected dispute ${disputeUuid} - chore remains completed`);
       });
+    } else {
+      console.log(`⏳ Dispute ${disputeUuid} still pending - not enough votes for resolution`);
     }
   }
 } 

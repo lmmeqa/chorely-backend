@@ -11,11 +11,23 @@ export default class Approval {
     ensureUuid(choreUuid);
     return dbGuard(async () => {
       try {
+        // Check if user has already voted
+        const existingVote = await db("chore_approvals")
+          .where({ chore_uuid: choreUuid, user_email: userEmail })
+          .first();
+        
+        if (existingVote) {
+          throw new Error("User has already voted on this chore");
+        }
+        
+        // Insert the vote
         await db("chore_approvals")
-          .insert({ chore_uuid: choreUuid, user_email: userEmail })
-          .onConflict(["chore_uuid", "user_email"]).ignore();
+          .insert({ chore_uuid: choreUuid, user_email: userEmail });
         return this.voters(choreUuid);
       } catch (e: any) { 
+        if (e.message === "User has already voted on this chore") {
+          throw e;
+        }
         throw mapFk(e, "Chore or user does not exist"); 
       }
     }, "Failed to vote");

@@ -1,10 +1,30 @@
 import { controller } from "../middleware";
 import { Dispute } from "../db/models";
+import { db } from "../db/models";
 import { v4 as uuidv4 } from "uuid";
 
 export const list = controller(async (req, res) => {
   const status = (req.query.status as string) as any;
-  res.json(await Dispute.list(status));
+  // Return enriched disputes with necessary chore fields to avoid N+1 on the client
+  const q = db("disputes")
+    .select(
+      "disputes.uuid",
+      "disputes.chore_id",
+      "disputes.disputer_email",
+      "disputes.reason",
+      "disputes.image_url",
+      "disputes.status",
+      "disputes.created_at",
+      "chores.name as chore_name",
+      "chores.description as chore_description",
+      "chores.icon as chore_icon",
+      "chores.user_email as chore_user_email"
+    )
+    .leftJoin("chores", "chores.uuid", "disputes.chore_id")
+    .orderBy("disputes.created_at", "desc");
+  if (status) q.where("disputes.status", status);
+  const rows = await q;
+  res.json(rows);
 });
 
 export const getById = controller(async (req, res) => {

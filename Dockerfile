@@ -14,4 +14,4 @@ RUN apk add --no-cache postgresql-client
 COPY . .
 
 # 4. run with hot-reload
-CMD ["npx", "ts-node-dev", "--respawn", "--transpile-only", "src/index.ts"]
+CMD ["npx", "ts-node-dev", "--respawn", "--transpile-only", "--max-old-space-size=4096", "src/index.ts"]

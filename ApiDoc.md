@@ -61,7 +61,7 @@ All endpoints are JSON-only and follow REST conventions.
 | **GET**   | `/chores/:uuid`              | Get chore by UUID                    | —                                            | **200** → `ChoreRow`   |
 | **GET**   | `/chores/available/:homeId`  | Unclaimed chores for a home          | —                                            | **200** → `ChoreRow[]` |
 | **GET**   | `/chores/unapproved/:homeId` | Chores awaiting approval             | —                                            | **200** → `ChoreRow[]` |
-| **GET**   | `/chores/user`               | Chores for a user                    | `?email=string&homeId=string`                 | **200** → `ChoreRow[]` |
+| **GET**   | `/chores/user`               | Chores claimed by a user (excludes completed) | `?email=string&homeId=string`                 | **200** → `ChoreRow[]` |
 | **PATCH** | `/chores/:uuid/approve`      | Approve → status = *unclaimed*       | —                                            | **204**                |
 | **PATCH** | `/chores/:uuid/claim`        | Claim a chore                        | `{ "email": "me@x.com" }`                    | **204**                |
 | **PATCH** | `/chores/:uuid/complete`     | Mark complete (auto-awards dynamic points) | —                                            | **204**                |
@@ -69,6 +69,10 @@ All endpoints are JSON-only and follow REST conventions.
 > Deprecated
 >
 > - `PATCH /chores/:uuid/verify` is retired. The route exists only to return **410 Gone** with a message to use `PATCH /chores/:uuid/complete` instead.
+
+### Chore Status Filtering
+
+The `/chores/user` endpoint only returns chores with status "claimed" (active chores assigned to the user). Completed chores are excluded from this endpoint to prevent them from appearing in "My Chores" lists. This ensures that users only see chores they can currently work on.
 
 *Errors*
 
@@ -93,7 +97,7 @@ All endpoints are JSON-only and follow REST conventions.
 
 | Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
-| **GET**  | `/disputes`                 | Get disputes                   | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` |
+| **GET**  | `/disputes`                 | Get disputes (enriched)        | `?status=pending\|approved\|rejected` | **200** → `DisputeRow[]` extended with `chore_name`, `chore_description`, `chore_icon`, `chore_user_email` |
 | **GET**  | `/disputes/:uuid`           | Get dispute by UUID            | —                               | **200** → `DisputeRow`        |
 | **POST** | `/disputes`                 | Create dispute                 | `{ choreId, reason, imageUrl?, disputerEmail }` | **201** → `DisputeRow` |
 | **PATCH**| `/disputes/:uuid/approve`   | Approve dispute (manual)       | —                               | **204**                       |
@@ -202,7 +206,7 @@ When creating a new chore, the system automatically generates a todo list using 
 | Verb     | Endpoint                    | Description                    | Body / Query                    | Success ⇢                    |
 | -------- | --------------------------- | ------------------------------ | ------------------------------- | ---------------------------- |
 | **GET**  | `/approvals/:uuid`          | Get approval status            | —                               | **200** → `ApprovalStatus`    |
-| **POST** | `/approvals/:uuid/vote`     | Vote for chore approval        | `{ "userEmail": "me@x.com" }`   | **204**                       |
+| **POST** | `/approvals/:uuid/vote`     | Vote for chore approval        | `{ "userEmail": "me@x.com" }`   | **200** → `ApprovalResponse`<br/>**409** → `{ "error": "User has already voted on this chore" }` |
 | **POST** | `/approvals/:uuid/unvote`   | Remove vote                    | `{ "userEmail": "me@x.com" }`   | **204**                       |
 
 ---

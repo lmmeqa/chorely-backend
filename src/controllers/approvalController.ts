@@ -1,5 +1,5 @@
 import { controller } from "../middleware";
-import { Chore, Approval, User } from "../db/models";
+import { Chore, Approval, User, Points } from "../db/models";
 
 const calcRequired = async (homeId: string) => {
   const users = await User.byHome(homeId); // implement if missing → SELECT users by user_homes
@@ -14,18 +14,38 @@ export const getStatus = controller(async (req, res) => {
   const chore = await Chore.findByUuid(req.params.uuid);
   const voters = await Approval.voters(chore.uuid);
   const required = await calcRequired(chore.home_id);
-  res.json({ status: chore.status, voters, votes: voters.length, required });
+  // Count eligible voters from user_homes to include members without user profile rows
+  const userHomeRows = await Points.getAll(chore.home_id);
+  res.json({
+    status: chore.status,
+    voters,
+    votes: voters.length,
+    required,
+    total_users: userHomeRows.length,
+  });
 });
 
 export const vote = controller(async (req, res) => {
   const { userEmail } = req.body as { userEmail: string };
   const chore = await Chore.findByUuid(req.params.uuid);
-  const voters = await Approval.vote(chore.uuid, userEmail);
-  const required = await calcRequired(chore.home_id);
-  if (voters.length >= required && chore.status === "unapproved") {
-    await Chore.setStatus(chore.uuid, "unclaimed");
+  
+  try {
+    const voters = await Approval.vote(chore.uuid, userEmail);
+    const required = await calcRequired(chore.home_id);
+    if (voters.length >= required && chore.status === "unapproved") {
+      await Chore.setStatus(chore.uuid, "unclaimed");
+    }
+    res.json({ approved: voters.length >= required, votes: voters.length, required, voters });
+  } catch (error: any) {
+    if (error.message === "User has already voted on this chore") {
+      res.status(409).json({ 
+        error: "User has already voted on this chore",
+        message: "You have already voted on this chore"
+      });
+    } else {
+      throw error;
+    }
   }
-  res.json({ approved: voters.length >= required, votes: voters.length, required, voters });
 });
 
 export const unvote = controller(async (req, res) => {

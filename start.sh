@@ -17,4 +17,4 @@ $KNEX migrate:latest
 $KNEX seed:run
 
 echo "🚀  Starting backend (ts-node-dev)…"
-exec npx ts-node-dev --respawn --transpile-only src/index
+exec npx ts-node-dev --respawn --transpile-only --max-old-space-size=4096 src/index

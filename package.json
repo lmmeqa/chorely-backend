@@ -7,7 +7,7 @@
     "knex": "ts-node -r tsconfig-paths/register ./node_modules/knex/bin/cli.js",
     "migrate": "npm run knex -- migrate:latest --knexfile src/db/knexfile.ts",
     "seed": "npm run knex -- seed:run --knexfile src/db/knexfile.ts",
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node --max-old-space-size=4096 src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },

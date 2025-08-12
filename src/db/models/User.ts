@@ -32,10 +32,14 @@ export default class User extends BaseModel<UserRow> {
     const ids = (Array.isArray(homeIds) ? homeIds : []).filter(Boolean);
 
     return dbGuard(async () => {
+      // Check if user already exists
+      const existingUser = await db<UserRow>("users").where({ email }).first();
+      if (existingUser) {
+        throw new ModelError("USER_EXISTS", `User with email '${email}' already exists`, 409);
+      }
+
       const user = (await db<UserRow>("users")
         .insert({ email, name })
-        .onConflict("email")
-        .merge()
         .returning("*"))[0];
 
       if (ids.length) {

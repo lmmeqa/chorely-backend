@@ -3,7 +3,11 @@ import { Chore, Approval, User } from "../db/models";
 
 const calcRequired = async (homeId: string) => {
   const users = await User.byHome(homeId); // implement if missing → SELECT users by user_homes
-  return Math.ceil(users.length * 0.5) || 1; // 50% threshold, ≥1
+  if (users.length === 1) {
+    return 1; // Single user can approve their own chores
+  }
+  // For multi-user homes, require at least 2 votes or 50% of users, whichever is higher
+  return Math.max(2, Math.ceil(users.length * 0.5));
 };
 
 export const getStatus = controller(async (req, res) => {

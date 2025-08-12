@@ -8,5 +8,9 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
-  }
+  },
+  "exclude": [
+    "scripts",
+    "node_modules"
+  ]
 }

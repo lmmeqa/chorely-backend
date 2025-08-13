@@ -41,20 +41,29 @@ export default class Chore {
   static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "claimed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
-        // Create the chore first (fast, no external calls)
+        // Create the chore first
         const [createdChore] = await db<ChoreRow>("chores")
           .insert({ ...data, status: "unapproved" })
           .returning("*");
 
-        // Kick off todo generation asynchronously AFTER commit so we don't block the request
-        (async () => {
-          try {
-            const generatedTodos = await GptService.generateTodosForChore(
-              data.name,
-              data.description
-            );
-            if (!generatedTodos || generatedTodos.length === 0) return;
+        // Attempt to synchronously generate and insert todos with a timeout
+        // This improves UX so the frontend can fetch real todos shortly after creation
+        const withTimeout = async <T>(p: Promise<T>, ms: number): Promise<T> => {
+          return await Promise.race([
+            p,
+            new Promise<T>((_, reject) =>
+              setTimeout(() => reject(new Error(`GPT generation timeout after ${ms}ms`)), ms)
+            ),
+          ]);
+        };
 
+        try {
+          const generatedTodos = await withTimeout(
+            GptService.generateTodosForChore(data.name, data.description),
+            6000
+          );
+
+          if (generatedTodos && generatedTodos.length > 0) {
             await db.transaction(async (trx) => {
               const todoInserts = generatedTodos.map((todo: GeneratedTodo, index: number) =>
                 trx<TodoRow>("todo_items").insert({
@@ -66,11 +75,15 @@ export default class Chore {
               );
               await Promise.all(todoInserts);
             });
-          } catch (err) {
-            // Log and continue; creation of chore should not fail due to todo generation
-            console.error("Failed to generate/insert todos for chore", createdChore.uuid, err);
           }
-        })();
+        } catch (err) {
+          // Log and continue; chore creation should not fail because of GPT issues
+          console.warn(
+            "Todo generation skipped (fallback/timeout/error) for chore",
+            createdChore.uuid,
+            (err as Error)?.message || err
+          );
+        }
 
         return formatRowTimestamps(createdChore);
       } catch (e: any) {

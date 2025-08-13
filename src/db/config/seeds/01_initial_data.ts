@@ -66,7 +66,7 @@ export async function seed(knex: Knex): Promise<void> {
       uuid: uuidv4(),
       name: "Vacuum Living Room",
       description: "Vacuum the entire living room including under furniture.",
-      time: minutesFromNow(30),
+      time: minutesFromNow(1429),
       icon: "wind",
       status: "unclaimed",
       user_email: null,

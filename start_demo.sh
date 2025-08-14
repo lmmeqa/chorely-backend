@@ -17,7 +17,7 @@ run_migrations() {
   $KNEX migrate:rollback --all || true
   
   echo "🗑️  Clearing any remaining data…"
-  psql -h db -U postgres -d chorely -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" || true
+  PGPASSWORD=postgres psql -h db -U postgres -d chorely -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" || true
   
   echo "🔄  Running migrations…"
   $KNEX migrate:latest

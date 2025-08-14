@@ -57,11 +57,9 @@ export class GptService {
 
 Description: ${choreDescription}
 
-Please provide 3-5 clear, actionable steps. Each step should be:
+Please provide at most 5clear, actionable steps. Each step should be:
 - Specific and actionable
 - In logical order
-- Easy to understand and follow
-- is specific to the chore
 
 Format your response as a numbered list, with each step on a new line starting with a number and period.
 

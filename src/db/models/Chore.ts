@@ -43,6 +43,44 @@ export default class Chore {
         const [createdChore] = await db<ChoreRow>("chores")
           .insert({ ...data, status: "unapproved" })
           .returning("*");
+        // Attempt to synchronously generate and insert todos with a timeout
+        // This improves UX so the frontend can fetch real todos shortly after creation
+        const withTimeout = async <T>(p: Promise<T>, ms: number): Promise<T> => {
+          return await Promise.race([
+            p,
+            new Promise<T>((_, reject) =>
+              setTimeout(() => reject(new Error(`GPT generation timeout after ${ms}ms`)), ms)
+            ),
+          ]);
+        };
+
+        try {
+          const generatedTodos = await withTimeout(
+            GptService.generateTodosForChore(data.name, data.description),
+            6000
+          );
+
+          if (generatedTodos && generatedTodos.length > 0) {
+            await db.transaction(async (trx) => {
+              const todoInserts = generatedTodos.map((todo: GeneratedTodo, index: number) =>
+                trx<TodoRow>("todo_items").insert({
+                  chore_id: createdChore.uuid,
+                  name: todo.name,
+                  description: todo.description,
+                  order: index,
+                })
+              );
+              await Promise.all(todoInserts);
+            });
+          }
+        } catch (err) {
+          // Log and continue; chore creation should not fail because of GPT issues
+          console.warn(
+            "Todo generation skipped (fallback/timeout/error) for chore",
+            createdChore.uuid,
+            (err as Error)?.message || err
+          );
+        }
 
         return formatRowTimestamps(createdChore);
       } catch (e: any) {

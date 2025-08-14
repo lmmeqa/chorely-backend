@@ -45,7 +45,6 @@ export async function seed(knex: Knex): Promise<void> {
     { email: "alice@demo.com", name: "Alice Johnson" },
     { email: "bob@demo.com", name: "Bob Smith" },
     { email: "charlie@demo.com", name: "Charlie Brown" },
-    { email: "diana@demo.com", name: "Diana Prince" },
   ];
   await knex("users").insert(users);
   const userByEmail = Object.fromEntries(users.map((u) => [u.email, u]));
@@ -185,7 +184,7 @@ export async function seed(knex: Knex): Promise<void> {
       time: minutesFromNow(15),
       icon: "brush",
       status: "claimed",
-      user_email: userByEmail["diana@demo.com"].email,
+      user_email: userByEmail["alice@demo.com"].email,
       home_id: demoHouse.id,
       claimed_at: hoursAgo(30),
       completed_at: null,
@@ -375,7 +374,7 @@ export async function seed(knex: Knex): Promise<void> {
     {
       uuid: uuidv4(),
       chore_id: choreByName["Organize Closet"].uuid,
-      disputer_email: userByEmail["diana@demo.com"].email,
+      disputer_email: userByEmail["alice@demo.com"].email,
       reason: "The closet organization is incomplete. Clothes are still mixed up and there's no proper categorization.",
       image_url: img("messy closet clothes floor"),
       status: "pending",

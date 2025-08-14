@@ -1,6 +1,5 @@
 import { db } from "./index";
 import { ModelError, dbGuard, mapFk, ensureUuid, formatRowTimestamps } from "./BaseModel";
-import { GptService, GeneratedTodo } from "../../services/gptService";
 import { TodoItem, TodoRow } from "./index";
 
 export type ChoreStatus = "unapproved" | "unclaimed" | "claimed" | "complete";
@@ -41,11 +40,9 @@ export default class Chore {
   static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "claimed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
-        // Create the chore first
         const [createdChore] = await db<ChoreRow>("chores")
           .insert({ ...data, status: "unapproved" })
           .returning("*");
-
         // Attempt to synchronously generate and insert todos with a timeout
         // This improves UX so the frontend can fetch real todos shortly after creation
         const withTimeout = async <T>(p: Promise<T>, ms: number): Promise<T> => {
@@ -90,6 +87,21 @@ export default class Chore {
         throw mapFk(e, "Failed to create chore");
       }
     }, "Failed to create chore");
+  }
+
+  static async addTodos(choreUuid: string, todos: Array<{ name: string; description: string }>) {
+    ensureUuid(choreUuid);
+    return dbGuard(async () => {
+      const todoInserts = todos.map((todo, index) =>
+        db<TodoRow>("todo_items").insert({
+          chore_id: choreUuid,
+          name: todo.name,
+          description: todo.description,
+          order: index,
+        })
+      );
+      await Promise.all(todoInserts);
+    }, "Failed to add todos to chore");
   }
 
   static async findByUuid(uuid: string): Promise<ChoreRow> {

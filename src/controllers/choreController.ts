@@ -1,11 +1,30 @@
 import { controller } from "../middleware";
 import { Chore, User, db } from "../db/models";
+import { GptService } from "../services/gptService";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
 export const createChore = controller(async (req, res) => {
-  const chore = await Chore.create(req.body); // expects { name, description, …, home_id }
+  // Create the chore first
+  const chore = await Chore.create(req.body);
+  
+  // Generate todos asynchronously after chore creation
+  (async () => {
+    try {
+      const generatedTodos = await GptService.generateTodosForChore(
+        req.body.name,
+        req.body.description
+      );
+      if (!generatedTodos || generatedTodos.length === 0) return;
+
+      await Chore.addTodos(chore.uuid, generatedTodos);
+    } catch (err) {
+      // Log and continue; creation of chore should not fail due to todo generation
+      console.error("Failed to generate/insert todos for chore", chore.uuid, err);
+    }
+  })();
+
   res.status(201).json(chore);
 });
 

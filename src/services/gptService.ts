@@ -43,7 +43,7 @@ export class GptService {
       if (!content) {
         throw new Error("No response from GPT API");
       }
-
+      console.log("gpt response: ", this.parseGptResponse(content))
       return this.parseGptResponse(content);
     } catch (error) {
       console.error("GPT API error:", error);

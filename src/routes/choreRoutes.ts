@@ -25,7 +25,22 @@ r.get("/user", listUserChores);   // GET /chores/user/:email?status=a,b
   r.patch("/:uuid/claim",    claimChore);         // PATCH /chores/:uuid/claim
   const uploadDir = path.join(process.cwd(), 'uploads');
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-  const upload = multer({ dest: uploadDir, limits: { fileSize: 10 * 1024 * 1024 } });
+  
+  // Configure multer to preserve file extensions
+  const storage = multer.diskStorage({
+    destination: uploadDir,
+    filename: (req, file, cb) => {
+      // Generate a unique filename with original extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname) || '.jpg'; // Default to .jpg if no extension
+      cb(null, uniqueSuffix + ext);
+    }
+  });
+  
+  const upload = multer({ 
+    storage: storage, 
+    limits: { fileSize: 10 * 1024 * 1024 } 
+  });
   r.patch("/:uuid/complete", upload.single('image'), completeChore);      // PATCH /chores/:uuid/complete
   r.patch("/:uuid/verify",   (req, res) => {      // PATCH /chores/:uuid/verify (DEPRECATED)
     res.status(410).json({

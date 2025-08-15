@@ -57,7 +57,7 @@ All endpoints are JSON-only and follow REST conventions.
 
 | Verb      | Endpoint                     | Description                          | Body / Query                                 | Success ⇢              |
 | --------- | ---------------------------- | ------------------------------------ | -------------------------------------------- | ---------------------- |
-| **POST**  | `/chores`                    | Create a chore (starts *unapproved*) | `{ name, description, time, icon, home_id, points, user_email? }` | **201** → `ChoreRow`   |
+| **POST**  | `/chores`                    | Create a chore (starts *unapproved*) | `{ name, description, time, icon, home_id, points, user_email }` | **201** → `ChoreRow`   |
 | **GET**   | `/chores/:uuid`              | Get chore by UUID                    | —                                            | **200** → `ChoreRow`   |
 | **GET**   | `/chores/available/:homeId`  | Unclaimed chores for a home          | —                                            | **200** → `ChoreRow[]` |
 | **GET**   | `/chores/unapproved/:homeId` | Chores awaiting approval             | —                                            | **200** → `ChoreRow[]` |

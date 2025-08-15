@@ -16,18 +16,20 @@ export async function up(knex: Knex): Promise<void> {
     DO $$
     BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'dispute_status') THEN
-        CREATE TYPE dispute_status AS ENUM ('pending','approved','rejected');
+        CREATE TYPE dispute_status AS ENUM ('pending','sustained','overruled');
       END IF;
     END $$;
   `);
     // Create vote_type enum
     await knex.raw(`
       DO $$ BEGIN
-        CREATE TYPE vote_type AS ENUM ('approve', 'reject');
+        CREATE TYPE vote_type AS ENUM ('sustain', 'overrule');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
     `);
+
+
 }
 
 

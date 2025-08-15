@@ -22,7 +22,8 @@ export const list = controller(async (req, res) => {
       "chores.description as chore_description",
       "chores.icon as chore_icon",
       "chores.user_email as chore_user_email",
-      "chores.photo_url as chore_photo_url"
+      "chores.photo_url as chore_photo_url",
+      "chores.points as chore_points"
     )
     .leftJoin("chores", "chores.uuid", "disputes.chore_id")
     .orderBy("disputes.created_at", "desc");
@@ -42,12 +43,27 @@ export const getById = controller(async (req, res) => {
 // Multer setup for dispute image uploads
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-export const disputeUpload = multer({ dest: uploadDir, limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Configure multer to preserve file extensions
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (req, file, cb) => {
+    // Generate a unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname) || '.jpg'; // Default to .jpg if no extension
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+export const disputeUpload = multer({ 
+  storage: storage, 
+  limits: { fileSize: 10 * 1024 * 1024 } 
+});
 
 export const create = controller(async (req, res) => {
   const { choreId, reason, disputerEmail } = req.body;
-  const file = (req as any).file as Express.Multer.File | undefined;
-  const photoUrl = file ? `/uploads/${path.basename(file.path)}` : undefined;
+  const file = (req as any).file as any;
+  const photoUrl = file ? `/uploads/${file.filename}` : undefined;
   const row = await Dispute.create({ 
     uuid: uuidv4(), 
     chore_id: choreId, 
@@ -61,13 +77,13 @@ export const create = controller(async (req, res) => {
 
 
 
-export const approve = controller(async (req, res) => {
-  await Dispute.setStatus(req.params.uuid, "approved");
+export const sustain = controller(async (req, res) => {
+  await Dispute.setStatus(req.params.uuid, "sustained");
   res.status(204).end();
 });
 
-export const reject = controller(async (req, res) => {
-  await Dispute.setStatus(req.params.uuid, "rejected");
+export const overrule = controller(async (req, res) => {
+  await Dispute.setStatus(req.params.uuid, "overruled");
   res.status(204).end();
 });
 

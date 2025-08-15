@@ -61,7 +61,7 @@ export async function seed(knex: Knex): Promise<void> {
 
   /* Create comprehensive chore data */
   const chores = [
-    // 5 UNCLAIMED chores
+    // 2 UNCLAIMED chores
     {
       uuid: uuidv4(),
       name: "Vacuum Living Room",
@@ -89,48 +89,6 @@ export async function seed(knex: Knex): Promise<void> {
       completed_at: null,
       points: 20,
       photo_url: img("washing dishes kitchen sink")
-    },
-    {
-      uuid: uuidv4(),
-      name: "Take Out Trash",
-      description: "Empty all trash cans and take to the curb.",
-      time: minutesFromNow(1000),
-      icon: "trash-2",
-      status: "unclaimed",
-      user_email: null,
-      home_id: demoHouse.id,
-      claimed_at: null,
-      completed_at: null,
-      points: 10,
-      photo_url: img("taking out trash bin")
-    },
-    {
-      uuid: uuidv4(),
-      name: "Dust Shelves",
-      description: "Dust all shelves and surfaces in the house.",
-      time: minutesFromNow(1429),
-      icon: "feather",
-      status: "unclaimed",
-      user_email: null,
-      home_id: demoHouse.id,
-      claimed_at: null,
-      completed_at: null,
-      points: 25,
-      photo_url: img("dusting shelves")
-    },
-    {
-      uuid: uuidv4(),
-      name: "Mop Kitchen",
-      description: "Mop the kitchen floor thoroughly.",
-      time: minutesFromNow(1429),
-      icon: "droplets",
-      status: "unclaimed",
-      user_email: null,
-      home_id: demoHouse.id,
-      claimed_at: null,
-      completed_at: null,
-      points: 35,
-      photo_url: img("mopping kitchen floor")
     },
 
     // 2 COMPLETED chores (that will be disputed)
@@ -232,14 +190,9 @@ export async function seed(knex: Knex): Promise<void> {
     if (chore.user_email && chore.points > 0) {
       let pointsToAward = chore.points;
       
-      // Calculate dynamic points based on when the chore was claimed
-      if (chore.claimed_at) {
-        const created = new Date(); // Use current time as created time for seed data
-        const claimed = new Date(chore.claimed_at);
-        const hoursUnclaimed = (claimed.getTime() - created.getTime()) / (1000 * 60 * 60);
-        const bonusMultiplier = Math.min(1 + (hoursUnclaimed / 24) * 0.1, 2.0);
-        pointsToAward = Math.round(chore.points * bonusMultiplier);
-      }
+      // For seed data, use the points as-is since they already represent the final values
+      // The dynamic calculation is only for real-time chore claiming, not seed data
+      pointsToAward = chore.points;
       
       await knex("user_homes")
         .where({ home_id: chore.home_id, user_email: chore.user_email })
@@ -248,112 +201,99 @@ export async function seed(knex: Knex): Promise<void> {
   }
 
   /* Create todo items for chores */
-  const todoData: [string, [string, string][]][] = [
+  const todoData: [string, string[]][] = [
     [
       "Vacuum Living Room",
       [
-        ["Clear floor", "Remove any items from the floor"],
-        ["Vacuum main area", "Vacuum the open floor space"],
-        ["Vacuum under furniture", "Use attachments to reach under couches and tables"],
-        ["Empty vacuum", "Empty the vacuum cleaner bag/canister"],
+        "Clear the floor of any small objects or debris",
+        "Plug in the vacuum cleaner and unwind the cord",
+        "Start from one corner of the room and vacuum in rows",
+        "Pay extra attention to high-traffic areas and under furniture",
+        "Empty the vacuum canister or replace the bag when full",
+        "Once done, wind the cord and store the vacuum cleaner"
       ],
     ],
     [
       "Wash Dishes",
       [
-        ["Scrape plates", "Remove leftover food from dishes"],
-        ["Wash with soap", "Use hot, soapy water to wash each dish"],
-        ["Rinse thoroughly", "Rinse off all soap suds"],
-        ["Dry and put away", "Use a towel or drying rack"],
+        "Scrape off any leftover food from plates and utensils",
+        "Fill the sink with warm soapy water",
+        "Wash dishes in order: glasses, plates, utensils, then pots and pans",
+        "Rinse each item thoroughly with clean water",
+        "Place items in the drying rack or dry with a clean towel",
+        "Empty the sink and wipe down the counter"
       ],
     ],
-    [
-      "Take Out Trash",
-      [
-        ["Collect trash", "Gather trash from all bins in the house"],
-        ["Replace liners", "Put new liners in all the trash cans"],
-        ["Take out to curb", "Take the main trash bag to the outdoor bin/curb"],
-      ],
-    ],
-    [
-      "Dust Shelves",
-      [
-        ["Gather supplies", "Get a duster or microfiber cloth"],
-        ["Dust high surfaces", "Start from top to bottom"],
-        ["Dust furniture", "Dust tables, shelves, and other furniture"],
-      ],
-    ],
-    [
-      "Mop Kitchen",
-      [
-        ["Sweep first", "Remove loose dirt and debris"],
-        ["Prepare mop solution", "Fill a bucket with water and cleaning solution"],
-        ["Mop the floor", "Mop from the farthest corner towards the door"],
-        ["Let it dry", "Allow the floor to air dry completely"],
-      ],
-    ],
+
     [
       "Clean Bathroom",
       [
-        ["Gather supplies", "Get cleaning supplies and gloves"],
-        ["Clean toilet", "Clean inside and outside of toilet"],
-        ["Clean sink", "Clean sink and countertop"],
-        ["Clean shower", "Clean shower walls and floor"],
+        "Gather cleaning supplies and put on gloves",
+        "Clean the toilet inside and out with disinfectant",
+        "Clean the sink and countertop with cleaner",
+        "Clean the shower walls and floor",
+        "Wipe down mirrors and fixtures",
+        "Empty the trash and replace the liner"
       ],
     ],
     [
       "Organize Closet",
       [
-        ["Remove everything", "Take all items out of the closet"],
-        ["Sort items", "Group items into categories: keep, donate, trash"],
-        ["Clean closet", "Wipe down shelves and vacuum floor"],
-        ["Arrange items", "Place items back in an organized manner"],
+        "Remove all items from the closet",
+        "Sort items into categories: keep, donate, trash",
+        "Clean the closet shelves and vacuum the floor",
+        "Arrange items back in an organized manner",
+        "Use storage solutions for better organization"
       ],
     ],
     [
       "Laundry",
       [
-        ["Sort clothes", "Separate lights, darks, and colors"],
-        ["Wash load", "Put one load in the washing machine with detergent"],
-        ["Dry load", "Transfer washed clothes to the dryer"],
-        ["Fold and put away", "Fold the dry clothes and put them away"],
+        "Sort clothes by color and fabric type",
+        "Check pockets and remove any items",
+        "Add detergent and start the washing machine",
+        "Transfer clothes to the dryer when done",
+        "Fold clean clothes and put them away"
       ],
     ],
     [
       "Sweep Porch",
       [
-        ["Get broom and dustpan", "Grab the necessary tools"],
-        ["Sweep front porch", "Sweep all debris from the front porch"],
-        ["Sweep back porch", "Sweep all debris from the back porch"],
-        ["Dispose of debris", "Use the dustpan to collect and throw away the pile"],
+        "Get a broom and dustpan",
+        "Sweep all debris from the front porch",
+        "Sweep all debris from the back porch",
+        "Collect the debris with the dustpan",
+        "Dispose of the debris in the trash"
       ],
     ],
     [
       "Make Bed",
       [
-        ["Strip old sheets", "Remove old sheets and pillowcases"],
-        ["Put on fitted sheet", "Put on the fitted sheet"],
-        ["Put on flat sheet", "Put on the flat sheet and tuck in"],
-        ["Add pillows", "Add pillows and arrange them nicely"],
+        "Remove any items from the bed",
+        "Straighten the fitted sheet and tuck in corners",
+        "Smooth out the top sheet and tuck it under the mattress",
+        "Fluff and arrange pillows at the head of the bed",
+        "Add any decorative pillows or throws",
+        "Smooth out the comforter or duvet cover"
       ],
     ],
     [
       "Water Plants",
       [
-        ["Check soil", "Check if soil is dry before watering"],
-        ["Water indoor plants", "Water all indoor plants"],
-        ["Water outdoor plants", "Water all outdoor plants"],
-        ["Clean up", "Wipe up any spilled water"],
+        "Check if the soil is dry before watering",
+        "Water all indoor plants thoroughly",
+        "Water all outdoor plants as needed",
+        "Avoid overwatering by checking soil moisture",
+        "Clean up any spilled water"
       ],
     ],
   ];
 
   const todoRows = todoData.flatMap(([choreName, steps]) =>
-    steps.map(([name, description], order) => ({
+    steps.map((name, order) => ({
       id: uuidv4(),
       chore_id: choreByName[choreName].uuid,
       name,
-      description,
       order,
     }))
   );
@@ -387,18 +327,18 @@ export async function seed(knex: Knex): Promise<void> {
   await knex("disputes").insert(disputes);
 
   /* Create dispute votes - only one vote per dispute so they don't auto-resolve */
-  const disputeVotes = [
-    {
-      dispute_uuid: disputes[0].uuid,
-      user_email: userByEmail["alice@demo.com"].email, // Alice votes to approve
-      vote: "approve",
-    },
-    {
-      dispute_uuid: disputes[1].uuid,
-      user_email: userByEmail["alice@demo.com"].email, // Alice votes to approve
-      vote: "approve",
-    },
-  ];
+           const disputeVotes = [
+           {
+             dispute_uuid: disputes[0].uuid,
+             user_email: userByEmail["alice@demo.com"].email, // Alice votes to sustain
+             vote: "sustain",
+           },
+           {
+             dispute_uuid: disputes[1].uuid,
+             user_email: userByEmail["alice@demo.com"].email, // Alice votes to sustain
+             vote: "sustain",
+           },
+         ];
 
   await knex("dispute_votes").insert(disputeVotes);
 }

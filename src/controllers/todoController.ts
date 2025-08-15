@@ -10,19 +10,18 @@ export const getTodoItems = controller(async (req, res) => {
 });
 
 export const createTodo = controller(async (req, res) => {
-  const { name, description, chore_id, order } = req.body;
+  const { name, chore_id, order } = req.body;
   
   // Validate required fields
-  if (!name || !description || !chore_id) {
+  if (!name || !chore_id) {
     return res.status(400).json({ 
-      error: "name, description, and chore_id are required" 
+      error: "name and chore_id are required" 
     });
   }
   
   const todoData = {
     chore_id,
     name,
-    description,
     order: order !== undefined ? order : undefined // Let the model handle default ordering
   };
   

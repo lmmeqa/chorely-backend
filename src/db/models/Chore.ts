@@ -18,6 +18,7 @@ export interface ChoreRow {
   claimed_at: string | null;
   created_at?: string;
   updated_at?: string;
+  photo_url?: string | null;
 }
 
 // Helper function to calculate dynamic points based on time unclaimed
@@ -33,55 +34,19 @@ const calculateDynamicPoints = (basePoints: number, createdAt: string, status: C
   // Increase points by 10% every 24 hours, capped at 100% increase (double points)
   const bonusMultiplier = Math.min(1 + (hoursUnclaimed / 24) * 0.1, 2.0);
   
-  return Math.round(basePoints * bonusMultiplier);
+  // Fix floating-point precision by using a more precise calculation
+  const exactPoints = basePoints * bonusMultiplier;
+  // Use a more explicit rounding approach to handle floating-point precision
+  return Math.round(Math.round(exactPoints * 1000000) / 1000000);
 };
 
 export default class Chore {
-  static async create(data: Omit<ChoreRow, "uuid" | "status" | "user_email" | "completed_at" | "claimed_at" | "created_at" | "updated_at">) {
+  static async create(data: Omit<ChoreRow, "uuid" | "status" | "completed_at"| "user_email" | "claimed_at" | "created_at" | "updated_at">) {
     return dbGuard(async () => {
       try {
         const [createdChore] = await db<ChoreRow>("chores")
           .insert({ ...data, status: "unapproved" })
           .returning("*");
-        // Attempt to synchronously generate and insert todos with a timeout
-        // This improves UX so the frontend can fetch real todos shortly after creation
-        const withTimeout = async <T>(p: Promise<T>, ms: number): Promise<T> => {
-          return await Promise.race([
-            p,
-            new Promise<T>((_, reject) =>
-              setTimeout(() => reject(new Error(`GPT generation timeout after ${ms}ms`)), ms)
-            ),
-          ]);
-        };
-
-        try {
-          const generatedTodos = await withTimeout(
-            GptService.generateTodosForChore(data.name, data.description),
-            6000
-          );
-
-          if (generatedTodos && generatedTodos.length > 0) {
-            await db.transaction(async (trx) => {
-              const todoInserts = generatedTodos.map((todo: GeneratedTodo, index: number) =>
-                trx<TodoRow>("todo_items").insert({
-                  chore_id: createdChore.uuid,
-                  name: todo.name,
-                  description: todo.description,
-                  order: index,
-                })
-              );
-              await Promise.all(todoInserts);
-            });
-          }
-        } catch (err) {
-          // Log and continue; chore creation should not fail because of GPT issues
-          console.warn(
-            "Todo generation skipped (fallback/timeout/error) for chore",
-            createdChore.uuid,
-            (err as Error)?.message || err
-          );
-        }
-
         return formatRowTimestamps(createdChore);
       } catch (e: any) {
         throw mapFk(e, "Failed to create chore");
@@ -89,14 +54,13 @@ export default class Chore {
     }, "Failed to create chore");
   }
 
-  static async addTodos(choreUuid: string, todos: Array<{ name: string; description: string }>) {
+  static async addTodos(choreUuid: string, todos: Array<{ name: string }>) {
     ensureUuid(choreUuid);
     return dbGuard(async () => {
       const todoInserts = todos.map((todo, index) =>
         db<TodoRow>("todo_items").insert({
           chore_id: choreUuid,
           name: todo.name,
-          description: todo.description,
           order: index,
         })
       );
@@ -118,7 +82,7 @@ export default class Chore {
 
   static async available(homeId: string): Promise<ChoreRow[]> {
     const results = await db<ChoreRow>("chores").where({ home_id: homeId, status: "unclaimed" }).andWhere("user_email", null);
-    return results.map(chore => {
+    return results.map((chore: ChoreRow) => {
       const formatted = formatRowTimestamps(chore);
       // Apply dynamic points calculation for unclaimed chores
       formatted.points = calculateDynamicPoints(chore.points, chore.created_at!, chore.status);
@@ -145,7 +109,7 @@ export default class Chore {
   }
   
   static async approve(uuid: string) {
-    await this.setStatus(uuid, "unclaimed");
+    await Chore.setStatus(uuid, "unclaimed");
   }
 
   static async claim(uuid: string, email: string) {
@@ -169,9 +133,9 @@ export default class Chore {
   static async verify(uuid: string) {
     ensureUuid(uuid);
     return dbGuard(async () => {
-      await db.transaction(async (trx) => {
+      await db.transaction(async (trx: any) => {
         // Lock row and re-check state for idempotency
-        const chore = await trx<ChoreRow>("chores").where({ uuid }).forUpdate().first();
+        const chore = await trx("chores").where({ uuid }).forUpdate().first();
         if (!chore) throw new ModelError("CHORE_NOT_FOUND", `Chore not found: '${uuid}'`, 404);
 
         // Only apply changes if not already complete
@@ -188,7 +152,10 @@ export default class Chore {
               const claimed = new Date(chore.claimed_at);
               const hoursUnclaimed = (claimed.getTime() - created.getTime()) / (1000 * 60 * 60);
               const bonusMultiplier = Math.min(1 + (hoursUnclaimed / 24) * 0.1, 2.0);
-              pointsToAward = Math.round(chore.points * bonusMultiplier);
+              // Fix floating-point precision by using a more precise calculation
+              const exactPoints = chore.points * bonusMultiplier;
+              // Use a more explicit rounding approach to handle floating-point precision
+              pointsToAward = Math.round(Math.round(exactPoints * 1000000) / 1000000);
             }
             
             await trx("user_homes")
@@ -200,12 +167,12 @@ export default class Chore {
     }, "Failed to complete chore");
   }
 
-  static async recentActivity(threshold: Date, homeId?: string) {
+  static async recentActivity(threshold: Date, homeId?: string): Promise<ChoreRow[]> {
     // Use a more efficient query that excludes pending disputes directly, and optionally filter by home
     const q = db<ChoreRow>("chores")
       .where("chores.completed_at", ">=", threshold)
       .where("chores.status", "complete")
-      .whereNotExists(function () {
+      .whereNotExists(function (this: any) {
         this.select("*")
           .from("disputes")
           .whereRaw("disputes.chore_id = chores.uuid")

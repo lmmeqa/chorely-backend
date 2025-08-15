@@ -5,7 +5,6 @@ export interface TodoRow {
   id: string;
   chore_id: string;
   name: string;
-  description: string;
   order: number;
 }
 

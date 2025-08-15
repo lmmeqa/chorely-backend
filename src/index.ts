@@ -33,8 +33,38 @@ if (!fs.existsSync(uploadsDir)) {
 // ─────── Global middleware ───────
 app.use(cors());           // allow cross-origin frontend <-> API
 app.use(express.json());   // parse JSON bodies into req.body
-app.use('/uploads', express.static(uploadsDir)); // Serve static files from 'uploads' directory
-app.use('/seed', express.static(path.join(__dirname, '..', 'static', 'seed'))); // Serve static files from 'static/seed' directory
+// Serve static files with caching headers and logging
+app.use('/uploads', (req, res, next) => {
+  const start = Date.now();
+  console.log(`\x1b[36m[STATIC]\x1b[0m Upload file accessed: ${req.path}`);
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`\x1b[36m[STATIC]\x1b[0m Upload file served: ${req.path} (${duration}ms)`);
+  });
+  
+  next();
+}, express.static(uploadsDir, {
+  maxAge: '1d', // Cache for 1 day
+  etag: true,
+  lastModified: true
+}));
+
+app.use('/seed', (req, res, next) => {
+  const start = Date.now();
+  console.log(`\x1b[36m[STATIC]\x1b[0m Seed file accessed: ${req.path}`);
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`\x1b[36m[STATIC]\x1b[0m Seed file served: ${req.path} (${duration}ms)`);
+  });
+  
+  next();
+}, express.static(path.join(__dirname, '..', 'static', 'seed'), {
+  maxAge: '1d', // Cache for 1 day
+  etag: true,
+  lastModified: true
+}));
 
 // ─────── Feature routers ───────
 app.use("/chores", choreRoutes);  // all chore endpoints

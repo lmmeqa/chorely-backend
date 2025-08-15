@@ -5,7 +5,7 @@ export class DisputeTimeoutService {
   private static timeoutInterval: NodeJS.Timeout | null = null;
 
   /**
-   * Check for disputes that have passed 24 hours and auto-reject them if they don't have enough approve votes
+   * Check for disputes that have passed 24 hours and auto-overrule them if they don't have enough sustain votes
    */
   static async checkTimeoutDisputes(): Promise<void> {
     try {
@@ -36,13 +36,13 @@ export class DisputeTimeoutService {
           const votes = await db("dispute_votes")
             .where({ dispute_uuid: dispute.uuid });
           
-          const approveVotes = votes.filter(v => v.vote === "approve").length;
+          const sustainVotes = votes.filter(v => v.vote === "sustain").length;
           
-          // After 24 hours, auto-reject regardless of vote count
+          // After 24 hours, auto-overrule regardless of vote count
           await db("disputes")
             .where({ uuid: dispute.uuid })
             .update({ 
-              status: "rejected", 
+              status: "overruled", 
               updated_at: db.fn.now() 
             });
           

@@ -109,7 +109,6 @@ export async function up(knex: Knex): Promise<void> {
       .inTable("chores")
       .onDelete("CASCADE");
     t.string("name").notNullable();
-    t.text("description").notNullable();
     t.integer("order").notNullable().defaultTo(0);
     // Ensure no two todos for the same chore can have the same order
     t.unique(["chore_id", "order"]);

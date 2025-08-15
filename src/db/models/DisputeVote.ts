@@ -1,7 +1,7 @@
 import { db } from "./index";
 import { ModelError, dbGuard, mapFk, ensureUuid, ensureEmail, formatRowTimestamps } from "./BaseModel";
 
-export type VoteType = "approve" | "reject";
+export type VoteType = "sustain" | "overrule";
 
 export interface DisputeVoteRow {
   dispute_uuid: string;
@@ -12,13 +12,13 @@ export interface DisputeVoteRow {
 
 export interface DisputeVoteStatus {
   dispute_uuid: string;
-  approve_votes: number;
-  reject_votes: number;
+  sustain_votes: number;
+  overrule_votes: number;
   total_votes: number;
   required_votes: number;
   total_eligible_voters: number;
-  is_approved: boolean;
-  is_rejected: boolean;
+  is_sustained: boolean;
+  is_overruled: boolean;
   is_24_hours_passed: boolean;
   hours_since_creation: number;
   voters: {
@@ -139,8 +139,8 @@ export default class DisputeVote {
       const requiredVotes = Math.ceil(totalEligibleVoters * 0.5); // 50% threshold of eligible voters
 
       // Count votes
-      const approveVotes = votes.filter(v => v.vote === "approve").length;
-      const rejectVotes = votes.filter(v => v.vote === "reject").length;
+      const sustainVotes = votes.filter(v => v.vote === "sustain").length;
+      const overruleVotes = votes.filter(v => v.vote === "overrule").length;
       const totalVotes = votes.length;
 
       // Check if 24 hours have passed since dispute creation
@@ -149,28 +149,28 @@ export default class DisputeVote {
       const hoursSinceCreation = (now.getTime() - disputeCreated.getTime()) / (1000 * 60 * 60);
       const is24HoursPassed = hoursSinceCreation >= 24;
 
-      // Determine if dispute should be auto-approved or auto-rejected
-      let isApproved = false;
-      let isRejected = false;
+      // Determine if dispute should be auto-sustained or auto-overruled
+      let isSustained = false;
+      let isOverruled = false;
 
       if (is24HoursPassed) {
-        // After 24 hours, auto-reject
-        isRejected = true;
-        isApproved = false;
+        // After 24 hours, auto-overrule (dispute fails)
+        isOverruled = true;
+        isSustained = false;
       } else {
         // Before 24 hours, strict voting logic
-        if (approveVotes >= requiredVotes) {
-          // Only approve if half or more people voted approve
-          isApproved = true;
-          isRejected = false;
-        } else if (rejectVotes >= requiredVotes) {
-          // Only reject if half or more people voted reject
-          isApproved = false;
-          isRejected = true;
+        if (sustainVotes >= requiredVotes) {
+          // Only sustain if half or more people voted sustain
+          isSustained = true;
+          isOverruled = false;
+        } else if (overruleVotes >= requiredVotes) {
+          // Only overrule if half or more people voted overrule
+          isSustained = false;
+          isOverruled = true;
         } else {
           // If not enough votes for either side, keep waiting
-          isApproved = false;
-          isRejected = false;
+          isSustained = false;
+          isOverruled = false;
         }
       }
 
@@ -179,13 +179,13 @@ export default class DisputeVote {
 
       return {
         dispute_uuid: disputeUuid,
-        approve_votes: approveVotes,
-        reject_votes: rejectVotes,
+        sustain_votes: sustainVotes,
+        overrule_votes: overruleVotes,
         total_votes: totalVotes,
         required_votes: requiredVotes,
         total_eligible_voters: totalEligibleVoters,
-        is_approved: isApproved,
-        is_rejected: isRejected,
+        is_sustained: isSustained,
+        is_overruled: isOverruled,
         is_24_hours_passed: is24HoursPassed,
         hours_since_creation: hoursSinceCreation,
         voters: votes.map(v => ({
@@ -220,26 +220,26 @@ export default class DisputeVote {
     const homeUsers = await db("user_homes").where({ home_id: chore.home_id });
     const eligibleVoters = homeUsers.filter((u: any) => u.user_email !== chore.user_email);
     const requiredVotes = Math.ceil(eligibleVoters.length * 0.5);
-    const approveVotes = votes.filter(v => v.vote === "approve").length;
-    const rejectVotes = votes.filter(v => v.vote === "reject").length;
+    const sustainVotes = votes.filter(v => v.vote === "sustain").length;
+    const overruleVotes = votes.filter(v => v.vote === "overrule").length;
 
     const voteStatus = {
-      approve_votes: approveVotes,
-      reject_votes: rejectVotes,
+      sustain_votes: sustainVotes,
+      overrule_votes: overruleVotes,
       required_votes: requiredVotes,
       total_eligible_voters: eligibleVoters.length,
-      is_approved: approveVotes >= requiredVotes,
-      is_rejected: rejectVotes >= requiredVotes,
+      is_sustained: sustainVotes >= requiredVotes,
+      is_overruled: overruleVotes >= requiredVotes,
       is_24_hours_passed: (new Date().getTime() - new Date(dispute.created_at!).getTime()) / (1000*60*60) >= 24,
     } as any;
     
 
     
-    if (voteStatus.is_approved) {
-      // Auto-approve the dispute
+    if (voteStatus.is_sustained) {
+      // Auto-sustain the dispute
       await db.transaction(async (trx) => {
         await trx("disputes").where({ uuid: disputeUuid }).update({ 
-          status: "approved", 
+          status: "sustained", 
           updated_at: trx.fn.now() 
         });
 
@@ -257,7 +257,10 @@ export default class DisputeVote {
               const claimed = new Date(chore.claimed_at);
               const hoursUnclaimed = (claimed.getTime() - created.getTime()) / (1000 * 60 * 60);
               const bonusMultiplier = Math.min(1 + (hoursUnclaimed / 24) * 0.1, 2.0);
-              pointsToRemove = Math.round(chore.points * bonusMultiplier);
+              // Fix floating-point precision by using a more precise calculation
+              const exactPoints = chore.points * bonusMultiplier;
+              // Use a more explicit rounding approach to handle floating-point precision
+              pointsToRemove = Math.round(Math.round(exactPoints * 1000000) / 1000000);
             }
             
             // Remove the dynamic points from the user, but don't go below 0
@@ -283,16 +286,16 @@ export default class DisputeVote {
         }
 
       });
-    } else if (voteStatus.is_rejected) {
-      // Auto-reject the dispute (either by votes or 24-hour timeout)
+    } else if (voteStatus.is_overruled) {
+      // Auto-overrule the dispute (either by votes or 24-hour timeout)
       await db.transaction(async (trx) => {
         await trx("disputes").where({ uuid: disputeUuid }).update({ 
-          status: "rejected", 
+          status: "overruled", 
           updated_at: trx.fn.now() 
         });
         
-        // For rejected disputes, ensure the chore remains completed
-        // (no need to change chore status since dispute was rejected)
+        // For overruled disputes, ensure the chore remains completed
+        // (no need to change chore status since dispute was overruled)
 
       });
     } else {

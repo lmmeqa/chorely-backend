@@ -10,19 +10,19 @@ if (process.env.OPENAI_API_KEY) {
 
 export interface GeneratedTodo {
   name: string;
-  description: string;
 }
 
 export class GptService {
   static async generateTodosForChore(choreName: string, choreDescription: string): Promise<GeneratedTodo[]> {
     if (!openai || !process.env.OPENAI_API_KEY) {
+      console.log("no openai or api key")
       // Fallback to predefined todos if no API key
       return this.getFallbackTodos(choreName);
     }
 
     try {
       const prompt = this.buildPrompt(choreName, choreDescription);
-      
+
       const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
@@ -43,7 +43,6 @@ export class GptService {
       if (!content) {
         throw new Error("No response from GPT API");
       }
-      console.log("gpt response: ", this.parseGptResponse(content))
       return this.parseGptResponse(content);
     } catch (error) {
       console.error("GPT API error:", error);
@@ -57,9 +56,10 @@ export class GptService {
 
 Description: ${choreDescription}
 
-Please provide at most 5clear, actionable steps. Each step should be:
+Please provide fewer than 6 clear, actionable steps. Average amt of todos should be 3 with a std dev of 1. 6 is max and 2 is minimum Each step should be:
 - Specific and actionable
 - In logical order
+- fewer than 13 words
 
 Format your response as a numbered list, with each step on a new line starting with a number and period.
 
@@ -76,22 +76,21 @@ Please generate the todo list for "${choreName}":`;
       // Try to parse numbered list format
       const lines = content.split('\n').filter(line => line.trim());
       const todos: GeneratedTodo[] = [];
-      
+
       for (const line of lines) {
         const match = line.match(/^\d+\.\s*(.+)$/);
         if (match) {
-          const description = match[1].trim();
+          const todoText = match[1].trim();
           todos.push({
-            name: description,
-            description: description
+            name: todoText
           });
         }
       }
-      
+
       if (todos.length > 0) {
         return todos;
       }
-      
+
       // Fallback parsing
       return this.parseManualResponse(content);
     } catch (error) {
@@ -103,52 +102,43 @@ Please generate the todo list for "${choreName}":`;
   private static parseManualResponse(content: string): GeneratedTodo[] {
     // Simple fallback parsing
     const lines = content.split('\n').filter(line => line.trim());
-    return lines.slice(0, 5).map((line, index) => ({
-      name: line.trim(),
-      description: line.trim()
+    return lines.slice(0, 5).map((line) => ({
+      name: line.trim()
     }));
   }
 
   private static getFallbackTodos(choreName: string): GeneratedTodo[] {
-    // Fallback todos for common chores
     const fallbackTodos: { [key: string]: GeneratedTodo[] } = {
-      "Taking out trash": [
-        { name: "Collect all trash bags from bins", description: "Gather all full trash bags from around the house" },
-        { name: "Tie bags securely", description: "Make sure all bags are properly tied to prevent spills" },
-        { name: "Take bags to outdoor bin", description: "Carry bags to the main outdoor trash container" },
-        { name: "Place new bags in bins", description: "Replace empty bins with fresh trash bags" },
-        { name: "Clean any spills", description: "Wipe up any mess around the bins" }
+      "Vacuum Living Room": [
+        { name: "Clear the floor of any small objects or debris" },
+        { name: "Plug in the vacuum cleaner and unwind the cord" },
+        { name: "Start from one corner of the room and vacuum in rows" },
+        { name: "Pay extra attention to high-traffic areas and under furniture" },
+        { name: "Empty the vacuum canister or replace the bag when full" },
+        { name: "Once done, wind the cord and store the vacuum cleaner" }
       ],
-      "Doing laundry": [
-        { name: "Sort clothes by color and fabric", description: "Separate whites, colors, and delicate items" },
-        { name: "Check pockets and remove items", description: "Empty all pockets and remove any loose items" },
-        { name: "Add detergent and start wash", description: "Add appropriate amount of detergent and start the washing machine" },
-        { name: "Transfer to dryer or hang to dry", description: "Move clothes to dryer or hang on drying rack" },
-        { name: "Fold and put away clothes", description: "Fold clean clothes and return them to their proper places" }
+      "Wash Dishes": [
+        { name: "Scrape off any leftover food from plates and utensils" },
+        { name: "Fill the sink with warm soapy water" },
+        { name: "Wash dishes in order: glasses, plates, utensils, then pots and pans" },
+        { name: "Rinse each item thoroughly with clean water" },
+        { name: "Place items in the drying rack or dry with a clean towel" },
+        { name: "Empty the sink and wipe down the counter" }
       ],
-      "Washing dishes": [
-        { name: "Scrape food scraps into trash", description: "Remove any leftover food from plates and utensils" },
-        { name: "Rinse dishes with warm water", description: "Rinse off any remaining food particles" },
-        { name: "Wash with soap and sponge", description: "Clean dishes thoroughly with dish soap and sponge" },
-        { name: "Rinse with clean water", description: "Rinse off all soap suds" },
-        { name: "Dry and put away", description: "Dry dishes and return them to their storage locations" }
+      "Make Bed": [
+        { name: "Remove any items from the bed" },
+        { name: "Straighten the fitted sheet and tuck in corners" },
+        { name: "Smooth out the top sheet and tuck it under the mattress" },
+        { name: "Fluff and arrange pillows at the head of the bed" },
+        { name: "Add any decorative pillows or throws" },
+        { name: "Smooth out the comforter or duvet cover" }
       ]
     };
 
-    const lowerChoreName = choreName.toLowerCase();
-    for (const [key, todos] of Object.entries(fallbackTodos)) {
-      if (lowerChoreName.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerChoreName)) {
-        return todos;
-      }
-    }
-
-    // Generic fallback
-    return [
-      { name: "Prepare materials", description: "Gather all necessary supplies and tools" },
-      { name: "Start the task", description: "Begin the chore following proper procedures" },
-      { name: "Complete the task", description: "Finish all required steps thoroughly" },
-      { name: "Clean up", description: "Put away tools and clean any mess made" },
-      { name: "Verify completion", description: "Double-check that everything is done correctly" }
+    return fallbackTodos[choreName] || [
+      { name: "Step 1: Prepare the area" },
+      { name: "Step 2: Complete the main task" },
+      { name: "Step 3: Clean up and organize" }
     ];
   }
 } 

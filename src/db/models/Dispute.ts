@@ -1,7 +1,7 @@
 import { db } from "./index";
 import { ModelError, dbGuard, mapFk, ensureUuid, formatRowTimestamps } from "./BaseModel";
 
-export type DisputeStatus = "pending" | "approved" | "rejected";
+export type DisputeStatus = "pending" | "sustained" | "overruled";
 
 export interface DisputeRow {
   uuid: string;
@@ -53,8 +53,8 @@ export default class Dispute {
       await db.transaction(async (trx) => {
         await trx("disputes").where({ uuid }).update({ status, updated_at: trx.fn.now() });
 
-        // On approve, remove points from the chore assignee and reverse chore completion
-        if (status === "approved") {
+            // On sustain, remove points from the chore assignee and reverse chore completion
+    if (status === "sustained") {
           const chore = await trx("chores").where({ uuid: dispute.chore_id }).first();
           if (chore && chore.user_email && chore.points > 0) {
             // Calculate the dynamic points that were awarded when the chore was completed
@@ -66,7 +66,10 @@ export default class Dispute {
               const claimed = new Date(chore.claimed_at);
               const hoursUnclaimed = (claimed.getTime() - created.getTime()) / (1000 * 60 * 60);
               const bonusMultiplier = Math.min(1 + (hoursUnclaimed / 24) * 0.1, 2.0);
-              pointsToRemove = Math.round(chore.points * bonusMultiplier);
+              // Fix floating-point precision by using a more precise calculation
+              const exactPoints = chore.points * bonusMultiplier;
+              // Use a more explicit rounding approach to handle floating-point precision
+              pointsToRemove = Math.round(Math.round(exactPoints * 1000000) / 1000000);
             }
             
             // Remove the dynamic points from the user

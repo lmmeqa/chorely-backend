@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export const list = controller(async (req, res) => {
   const status = (req.query.status as string) as any;
+  const homeId = String((req.query as any).homeId || '');
   // Return enriched disputes with necessary chore fields to avoid N+1 on the client
   const q = db("disputes")
     .select(
@@ -28,6 +29,7 @@ export const list = controller(async (req, res) => {
     .leftJoin("chores", "chores.uuid", "disputes.chore_id")
     .orderBy("disputes.created_at", "desc");
   if (status) q.where("disputes.status", status);
+  if (homeId) q.andWhere("chores.home_id", homeId);
   const rows = await q;
   res.json(rows);
 });
@@ -61,7 +63,9 @@ export const disputeUpload = multer({
 });
 
 export const create = controller(async (req, res) => {
-  const { choreId, reason, disputerEmail } = req.body;
+  const disputerEmail = (req as any).user?.email as string | undefined;
+  const { choreId, reason } = req.body;
+  if (!disputerEmail) return res.status(401).json({ error: "Unauthorized" });
   const file = (req as any).file as any;
   const photoUrl = file ? `/uploads/${file.filename}` : undefined;
   const row = await Dispute.create({ 

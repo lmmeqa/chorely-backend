@@ -5,21 +5,17 @@ import path from "path";
 import fs from "fs";
 
 export const createChore = controller(async (req, res) => {
-  // Validate required fields
-  if (!req.body.user_email) {
-    return res.status(400).json({ error: "user_email is required" });
-  }
+  const creatorEmail = (req as any).user?.email as string | undefined;
+  if (!creatorEmail) return res.status(401).json({ error: "Unauthorized" });
   
-  // Create the chore first - exclude user_email from the data to be stored
-  const { user_email, ...choreData } = req.body;
-  const chore = await Chore.create(choreData);
+  // Create the chore first
+  const chore = await Chore.create(req.body);
   
-  // Automatically add a vote from the creator
+  // Automatically add a vote from the creator (from token)
   try {
-    await Approval.vote(chore.uuid, req.body.user_email);
-    console.log(`\x1b[32m[VOTE]\x1b[0m Auto-vote added for chore ${chore.uuid} by ${req.body.user_email}`);
+    await Approval.vote(chore.uuid, creatorEmail);
+    console.log(`\x1b[32m[VOTE]\x1b[0m Auto-vote added for chore ${chore.uuid} by ${creatorEmail}`);
   } catch (err) {
-    // Log but don't fail chore creation if auto-vote fails
     console.error("Failed to add auto-vote for chore", chore.uuid, err);
   }
   
@@ -51,8 +47,10 @@ export const listUnapproved = controller(async (req, res) => {
 });
 
 export const listUserChores = controller(async (req, res) => {
-  const { email, homeId } = (req.query as any) as { email: string; homeId: string };
-  res.json(await Chore.forUser(email, homeId)); // implement in model
+  const email = (req as any).user?.email as string | undefined;
+  const { homeId } = (req.query as any) as { homeId: string };
+  if (!email) return res.status(401).json({ error: 'Unauthorized' });
+  res.json(await Chore.forUser(email, homeId));
 });
 
 export const approveChore = controller(async (req, res) => {
@@ -61,8 +59,9 @@ export const approveChore = controller(async (req, res) => {
 });
 
 export const claimChore = controller(async (req, res) => {
-  const user = await User.findByEmail(req.body.email);
-  await Chore.claim(req.params.uuid, user.email);
+  const email = (req as any).user?.email as string | undefined;
+  if (!email) return res.status(401).json({ error: 'Unauthorized' });
+  await Chore.claim(req.params.uuid, email);
   res.status(204).end();
 });
 

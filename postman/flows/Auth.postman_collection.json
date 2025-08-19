@@ -1,0 +1,64 @@
+{
+  "info": {
+    "name": "Chorely Flows - Auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Auth flow. Set environment base_url and access_token (Supabase access token)."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const t = pm.environment.get('access_token') || '';",
+          "if (t) pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });",
+          "pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authenticate (sync user)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": { "raw": "{{base_url}}/auth/authenticate", "host": ["{{base_url}}"], "path": ["auth","authenticate"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.code === 200);",
+              "const b = pm.response.json();",
+              "if (b && b.email) pm.environment.set('user_email', b.email);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Me",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth","me"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.code === 200);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+
+

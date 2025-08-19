@@ -3,16 +3,19 @@ import { DisputeVote, VoteType } from "../db/models";
 
 export const vote = controller(async (req, res) => {
   const { disputeUuid } = req.params;
-  const { userEmail, vote } = req.body as { userEmail: string; vote: VoteType };
-  
+  const userEmail = (req as any).user?.email as string | undefined;
+  const { vote } = req.body as { vote: VoteType };
+  if (!userEmail) return res.status(401).json({ error: 'Unauthorized' });
+
   await DisputeVote.vote(disputeUuid, userEmail, vote);
   res.status(204).end();
 });
 
 export const removeVote = controller(async (req, res) => {
   const { disputeUuid } = req.params;
-  const { userEmail } = req.body as { userEmail: string };
-  
+  const userEmail = (req as any).user?.email as string | undefined;
+  if (!userEmail) return res.status(401).json({ error: 'Unauthorized' });
+
   await DisputeVote.removeVote(disputeUuid, userEmail);
   res.status(204).end();
 });

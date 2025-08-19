@@ -16,6 +16,7 @@ import disputeRoutes from "./routes/disputeRoutes";
 import disputeVoteRoutes from "./routes/disputeVoteRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import todoRoutes from "./routes/todoRoutes";
+import authRoutes from "./routes/authRoutes";
 import { errorHandler } from "./middleware";
 import { DisputeTimeoutService } from "./services/disputeTimeoutService";
 import path from "path";
@@ -76,6 +77,7 @@ app.use("/disputes", disputeRoutes);
 app.use("/dispute-votes", disputeVoteRoutes);
 app.use("/activities", activityRoutes);
 app.use("/todos", todoRoutes);
+app.use("/auth", authRoutes);
 
 /** last middleware: converts every error into JSON */
 app.use(errorHandler);

@@ -12,14 +12,18 @@ import {
   claimChore,
   completeChore,
 } from "../controllers/choreController";
+import { verifySupabaseToken } from "../middleware/supabaseAuth";
+import { requireHomeMemberByParam, requireHomeMemberByQuery, requireHomeMemberByChoreUuidParam } from "../middleware/authorization";
 
 const r = Router();
 
+r.use(verifySupabaseToken);
+
 r.post("/", createChore);                       // POST /chores
 
-r.get("/available/:homeId",  listAvailable);    // GET /chores/available/:homeId
-r.get("/unapproved/:homeId", listUnapproved);   // GET /chores/unapproved/:homeId
-r.get("/user", listUserChores);   // GET /chores/user/:email?status=a,b
+r.get("/available/:homeId",  requireHomeMemberByParam("homeId"), listAvailable);
+r.get("/unapproved/:homeId", requireHomeMemberByParam("homeId"), listUnapproved);
+r.get("/user", requireHomeMemberByQuery("homeId"), listUserChores);
 
   r.patch("/:uuid/approve",  approveChore);       // PATCH /chores/:uuid/approve
   r.patch("/:uuid/claim",    claimChore);         // PATCH /chores/:uuid/claim
@@ -41,7 +45,7 @@ r.get("/user", listUserChores);   // GET /chores/user/:email?status=a,b
     storage: storage, 
     limits: { fileSize: 10 * 1024 * 1024 } 
   });
-  r.patch("/:uuid/complete", upload.single('image'), completeChore);      // PATCH /chores/:uuid/complete
+  r.patch("/:uuid/complete", requireHomeMemberByChoreUuidParam("uuid"), upload.single('image'), completeChore);
   r.patch("/:uuid/verify",   (req, res) => {      // PATCH /chores/:uuid/verify (DEPRECATED)
     res.status(410).json({
       error: "The /verify endpoint has been deprecated. Please use /complete instead.",

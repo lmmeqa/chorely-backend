@@ -5,7 +5,7 @@ WORKDIR /app
 
 # 1. deps first for better layer-caching
 COPY package*.json ./
-RUN npm install --include=dev
+RUN npm i
 
 # 2. dev tools
 RUN apk add --no-cache postgresql-client

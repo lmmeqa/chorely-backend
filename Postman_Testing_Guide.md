@@ -1,5 +1,8 @@
 # Chorely API Postman Testing Guide
 
+New modular flow collections are available under `backend/postman/flows/`.
+Each flow is a small Postman collection that uses the same environment.
+
 This guide will help you set up and use the Postman collection to test all Chorely API endpoints.
 
 ## Setup Instructions

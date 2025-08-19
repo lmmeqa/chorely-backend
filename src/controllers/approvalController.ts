@@ -26,7 +26,8 @@ export const getStatus = controller(async (req, res) => {
 });
 
 export const vote = controller(async (req, res) => {
-  const { userEmail } = req.body as { userEmail: string };
+  const userEmail = (req as any).user?.email as string | undefined;
+  if (!userEmail) return res.status(401).json({ error: "Unauthorized" });
   const chore = await Chore.findByUuid(req.params.uuid);
   
   try {
@@ -49,7 +50,8 @@ export const vote = controller(async (req, res) => {
 });
 
 export const unvote = controller(async (req, res) => {
-  const { userEmail } = req.body as { userEmail: string };
+  const userEmail = (req as any).user?.email as string | undefined;
+  if (!userEmail) return res.status(401).json({ error: "Unauthorized" });
   const chore = await Chore.findByUuid(req.params.uuid);
   const voters = await Approval.unvote(chore.uuid, userEmail);
   const required = await calcRequired(chore.home_id);

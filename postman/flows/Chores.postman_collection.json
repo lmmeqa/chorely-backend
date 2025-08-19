@@ -1,0 +1,32 @@
+{
+  "info": {
+    "name": "Chorely Flows - Chores",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [{
+    "listen": "prerequest",
+    "script": {"type":"text/javascript","exec":[
+      "const t = pm.environment.get('access_token') || '';",
+      "if (t) pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });",
+      "pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });"
+    ]}
+  }],
+  "item": [
+    {"name":"Available","request":{"method":"GET","url":{"raw":"{{base_url}}/chores/available/{{home_id}}","host":["{{base_url}}"],"path":["chores","available","{{home_id}}"]}},
+     "event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('200',()=>pm.response.code===200);"]}}]
+    },
+    {"name":"Unapproved","request":{"method":"GET","url":{"raw":"{{base_url}}/chores/unapproved/{{home_id}}","host":["{{base_url}}"],"path":["chores","unapproved","{{home_id}}"]}}},
+    {"name":"My Chores","request":{"method":"GET","url":{"raw":"{{base_url}}/chores/user?homeId={{home_id}}","host":["{{base_url}}"],"path":["chores","user"],"query":[{"key":"homeId","value":"{{home_id}}"}]}}},
+    {"name":"Create Chore","request":{"method":"POST","body":{"mode":"raw","raw":"{\n  \"name\": \"Test Chore\",\n  \"description\": \"Do something\",\n  \"time\": \"2025-01-01T10:00:00Z\",\n  \"icon\": \"package\",\n  \"home_id\": \"{{home_id}}\",\n  \"points\": 10\n}"},"url":{"raw":"{{base_url}}/chores","host":["{{base_url}}"],"path":["chores"]}},
+     "event":[{"listen":"test","script":{"type":"text/javascript","exec":[
+      "pm.test('201',()=>pm.response.code===201);",
+      "const b = pm.response.json(); if (b && b.uuid) pm.environment.set('chore_uuid', b.uuid);"
+     ]}}]
+    },
+    {"name":"Approval Status","request":{"method":"GET","url":{"raw":"{{base_url}}/approvals/{{chore_uuid}}","host":["{{base_url}}"],"path":["approvals","{{chore_uuid}}"]}}},
+    {"name":"Vote Approve","request":{"method":"POST","url":{"raw":"{{base_url}}/approvals/{{chore_uuid}}/vote","host":["{{base_url}}"],"path":["approvals","{{chore_uuid}}","vote"]}}},
+    {"name":"Claim","request":{"method":"PATCH","url":{"raw":"{{base_url}}/chores/{{chore_uuid}}/claim","host":["{{base_url}}"],"path":["chores","{{chore_uuid}}","claim"]}}},
+    {"name":"Complete (no photo)","request":{"method":"PATCH","url":{"raw":"{{base_url}}/chores/{{chore_uuid}}/complete","host":["{{base_url}}"],"path":["chores","{{chore_uuid}}","complete"]}}}
+  ]
+}
+

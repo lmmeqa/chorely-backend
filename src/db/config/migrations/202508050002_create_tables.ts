@@ -22,6 +22,8 @@ export async function up(knex: Knex): Promise<void> {
     "todo_items",
     "chores",
     "user_homes",
+    // Drop any legacy auth mapping table that references users (avoids FK errors)
+    "auth_identities",
     "users",
     "home",
     "homes" // legacy plural, if any
@@ -42,10 +44,15 @@ export async function up(knex: Knex): Promise<void> {
     t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
   });
 
-  /* users (keep id, but relationships use email) */
+  /* users (email as PK today; add Supabase profile/cache fields) */
   await knex.schema.createTable("users", (t) => {
     t.string("email").primary();
     t.string("name").notNullable();
+    // Supabase identity cache
+    t.uuid("supabase_user_id").nullable().unique();
+    t.string("avatar_url").nullable();
+    t.string("last_provider").nullable();
+    t.timestamp("last_login").nullable();
     t.timestamp("created_at").defaultTo(knex.raw("get_pacific_timestamp()"));
     t.timestamp("updated_at").defaultTo(knex.raw("get_pacific_timestamp()"));
   });
@@ -155,15 +162,8 @@ export async function up(knex: Knex): Promise<void> {
     t.index(["disputer_email"]);
   });
 
-  // Ensure vote_type enum exists (idempotent) before creating dispute_votes
-  await knex.raw(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vote_type') THEN
-        CREATE TYPE vote_type AS ENUM ('approve', 'reject');
-      END IF;
-    END $$;
-  `);
+  // vote_type enum is created in 202508050001_enable_uuid_ext.ts as ('sustain','overrule').
+  // Do not redefine here to avoid conflicts.
 
   /* chore_approvals (email-based FK) */// Create dispute_votes table for voting on disputes
   await knex.schema.createTable("dispute_votes", (t) => {

@@ -1,12 +1,15 @@
 import { Router } from "express";
 import { list, create, sustain, overrule, getById, disputeUpload } from "../controllers/disputeController";
+import { verifySupabaseToken } from "../middleware/supabaseAuth";
+import { requireHomeMemberByDisputeUuidParam, requireHomeMemberByChoreUuidBody, requireHomeMemberByQuery } from "../middleware/authorization";
 
 const r = Router();
+r.use(verifySupabaseToken);
 
-r.get("/", list);                        // GET    /disputes?status=pending
-r.get("/:uuid", getById);                // GET    /disputes/:uuid
-r.post("/", disputeUpload.single('image'), create);                     // multipart: image optional
-r.patch("/:uuid/sustain", sustain);      // PATCH  /disputes/:uuid/sustain
-r.patch("/:uuid/overrule", overrule);    // PATCH  /disputes/:uuid/overrule
+r.get("/", requireHomeMemberByQuery("homeId"), list);                        // GET    /disputes?homeId=:id&status=pending
+r.get("/:uuid", requireHomeMemberByDisputeUuidParam("uuid"), getById);
+r.post("/", requireHomeMemberByChoreUuidBody("choreId"), disputeUpload.single('image'), create);
+r.patch("/:uuid/sustain", requireHomeMemberByDisputeUuidParam("uuid"), sustain);
+r.patch("/:uuid/overrule", requireHomeMemberByDisputeUuidParam("uuid"), overrule);
 
 export default r;

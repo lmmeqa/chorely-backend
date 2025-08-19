@@ -1,0 +1,11 @@
+{
+  "info": {"name":"Chorely Flows - Disputes","schema":"https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+  "event":[{"listen":"prerequest","script":{"type":"text/javascript","exec":[
+    "const t = pm.environment.get('access_token')||''; if (t) pm.request.headers.upsert({key:'Authorization',value:'Bearer '+t});"
+  ]}}],
+  "item": [
+    {"name":"Create Dispute","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"choreId\": \"{{chore_uuid}}\",\n  \"reason\": \"Not done well\"\n}"},"url":{"raw":"{{base_url}}/disputes","host":["{{base_url}}"],"path":["disputes"]}}},
+    {"name":"List Pending","request":{"method":"GET","url":{"raw":"{{base_url}}/disputes?status=pending","host":["{{base_url}}"],"path":["disputes"],"query":[{"key":"status","value":"pending"}]}}}
+  ]
+}
+

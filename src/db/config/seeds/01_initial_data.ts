@@ -32,6 +32,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex("todo_items").del().catch(() => {});
   await knex("disputes").del().catch(() => {});
   await knex("chores").del().catch(() => {});
+  await knex("auth_identities").del().catch(() => {});
   await knex("user_homes").del().catch(() => {});
   await knex("users").del().catch(() => {});
   await knex("home").del().catch(() => {});

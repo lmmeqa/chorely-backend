@@ -45,7 +45,7 @@ export default class Chore {
     return dbGuard(async () => {
       try {
         const [createdChore] = await db<ChoreRow>("chores")
-          .insert({ ...data, status: "unapproved" })
+          .insert({ ...data, status: "unapproved", user_email: null })
           .returning("*");
         return formatRowTimestamps(createdChore);
       } catch (e: any) {

@@ -1,0 +1,41 @@
+name: Deploy Worker (migrate -> publish)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  migrate-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      # --- Run Knex migrations against Neon (TCP) ---
+      - name: Run DB migrations (Neon)
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          TS_NODE_TRANSPILE_ONLY: "1"
+        run: npm run knex -- --knexfile src/db/config/knexfile.ts migrate:latest
+
+      # --- Publish the Cloudflare Worker ---
+      - name: Publish Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: backend

@@ -28,4 +28,3 @@ const config: Knex.Config = {
   },
 };
 export default config;
-module.exports = config;

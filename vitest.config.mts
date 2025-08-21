@@ -5,17 +5,20 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
+    poolOptions: { forks: { singleFork: true } },
+    // Reduce noisy logs interleaved in output; keep summary readable
+    onConsoleLog(log) {
+      if (/^\[dotenv@/.test(log)) return false;
+      if (/^\[cleanup\]/.test(log)) return false;
+      if (/GPT API error:/i.test(log)) return false;
+      return true;
     },
     setupFiles: ['tests/config/env.ts'],
     globalSetup: 'tests/config/globalSetup.ts',
     include: ['tests/**/*.{e2e,int,unit}.test.ts'],
     testTimeout: 60000,
     hookTimeout: 60000,
-    reporters: 'default',
+
     sequence: { concurrent: false },
     coverage: {
       provider: 'v8',
@@ -25,7 +28,6 @@ export default defineConfig({
         '**/*.test.ts',
         'tests/**',
         'src/**/*.d.ts',
-        // Non-code targets: server entrypoint and migration/seed scripts
         'src/index.ts',
         'src/db/config/migrations/**',
         'src/db/config/seeds/**',

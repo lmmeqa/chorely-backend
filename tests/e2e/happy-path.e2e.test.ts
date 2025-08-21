@@ -14,7 +14,7 @@ const agent = request(app);
 
 async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
   let r: any = agent;
-  const h = headers || {};
+  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
   switch (method.toUpperCase()) {
     case 'GET': r = r.get(url); break;
     case 'POST': r = r.post(url).send(body ?? {}); break;
@@ -23,7 +23,7 @@ async function json(method: string, url: string, body?: any, headers?: Record<st
     case 'DELETE': r = r.delete(url).send(body ?? {}); break;
     default: throw new Error(`unsupported method ${method}`);
   }
-  if (Object.keys(h).length > 0) r = r.set(h);
+  r = r.set(h);
   const res = await r;
   const text = res.text ?? '';
   try {
@@ -110,15 +110,15 @@ describe('Chorely API E2E', () => {
     assert.equal(create.status, 201);
     choreUuid = create.json.uuid;
 
-    const approve = await agent.patch(`/chores/${choreUuid}/approve`).set({ Authorization: `Bearer ${token1}` });
+    const approve = await agent.patch(`/chores/${choreUuid}/approve`).set({ Authorization: `Bearer ${token1}`, Connection: 'close' });
     assert.equal(approve.status, 204);
 
-    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${token1}` });
+    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${token1}`, Connection: 'close' });
     assert.equal(claim.status, 204);
 
     const complete = await agent
       .patch(`/chores/${choreUuid}/complete`)
-      .set({ Authorization: `Bearer ${token1}` })
+      .set({ Authorization: `Bearer ${token1}`, Connection: 'close' })
       .attach('image', Buffer.from([1,2,3]), { filename: 'proof.jpg', contentType: 'image/jpeg' });
     assert.equal(complete.status, 204);
   });
@@ -153,7 +153,7 @@ describe('Chorely API E2E', () => {
     assert.equal(d.status, 201);
     disputeUuid = d.json.uuid;
 
-    const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${token2}` }).send({ vote: 'sustain' });
+    const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${token2}`, Connection: 'close' }).send({ vote: 'sustain' });
     assert.equal(v.status, 204);
 
     const st = await json('GET', `/dispute-votes/${disputeUuid}/status`, undefined, { Authorization: `Bearer ${token1}` });

@@ -11,7 +11,7 @@ const agent = request(app);
 
 async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
   let r: any = agent;
-  const h = headers || {};
+  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
   switch (method.toUpperCase()) {
     case 'GET': r = r.get(url); break;
     case 'POST': r = r.post(url).send(body ?? {}); break;
@@ -19,7 +19,7 @@ async function json(method: string, url: string, body?: any, headers?: Record<st
     case 'DELETE': r = r.delete(url).send(body ?? {}); break;
     default: throw new Error(`unsupported method ${method}`);
   }
-  if (Object.keys(h).length > 0) r = r.set(h);
+  r = r.set(h);
   const res = await r;
   const text = res.text ?? '';
   try {
@@ -78,7 +78,7 @@ describe('Chores domain E2E', () => {
     assert.ok(available.json.some((c: any) => c.uuid === choreUuid));
 
     // Claim by Alice
-    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${tokenA}` });
+    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${tokenA}`, Connection: 'close' });
     assert.equal(claim.status, 204);
 
     // User chores list includes it for Alice

@@ -11,7 +11,7 @@ const agent = request(app);
 
 async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
   let r: any = agent;
-  const h = headers || {};
+  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
   switch (method.toUpperCase()) {
     case 'GET': r = r.get(url); break;
     case 'POST': r = r.post(url).send(body ?? {}); break;
@@ -19,7 +19,7 @@ async function json(method: string, url: string, body?: any, headers?: Record<st
     case 'DELETE': r = r.delete(url).send(body ?? {}); break;
     default: throw new Error(`unsupported method ${method}`);
   }
-  if (Object.keys(h).length > 0) r = r.set(h);
+  r = r.set(h);
   const res = await r;
   const text = res.text ?? '';
   try { return { status: res.status, json: JSON.parse(text) } as any; }
@@ -49,9 +49,9 @@ describe('Disputes domain E2E', () => {
     // Approve and complete chore by Alice (ensure threshold met)
     assert.ok([200, 409].includes((await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: alice.email }, { Authorization: `Bearer ${tokens[alice.email]}` })).status));
     assert.ok([200, 409].includes((await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: bob.email }, { Authorization: `Bearer ${tokens[bob.email]}` })).status));
-    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${tokens[alice.email]}` });
+    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${tokens[alice.email]}`, Connection: 'close' });
     assert.equal(claim.status, 204);
-    const complete = await agent.patch(`/chores/${choreUuid}/complete`).set({ Authorization: `Bearer ${tokens[alice.email]}` }).attach('image', Buffer.from([1,2,3]), { filename: 'd.jpg', contentType: 'image/jpeg' });
+    const complete = await agent.patch(`/chores/${choreUuid}/complete`).set({ Authorization: `Bearer ${tokens[alice.email]}`, Connection: 'close' }).attach('image', Buffer.from([1,2,3]), { filename: 'd.jpg', contentType: 'image/jpeg' });
     assert.equal(complete.status, 204);
   }, 30000);
 

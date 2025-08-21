@@ -11,9 +11,9 @@
     "dev": "ts-node --max-old-space-size=4096 src/index.ts",
     "build": "tsc && cp -r static dist/",
     "start": "node dist/index.js",
-    "test": "vitest run --reporter=verbose",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run --config vitest.config.mts --reporter=verbose",
+    "test:ui": "vitest --config vitest.config.mts --ui",
+    "test:coverage": "vitest run --config vitest.config.mts --coverage"
   },
   "keywords": [],
   "author": "",

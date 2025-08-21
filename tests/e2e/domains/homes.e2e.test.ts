@@ -11,14 +11,14 @@ const agent = request(app);
 
 async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
   let r: any = agent;
-  const h = headers || {};
+  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
   switch (method.toUpperCase()) {
     case 'GET': r = r.get(url); break;
     case 'POST': r = r.post(url).send(body ?? {}); break;
     case 'PATCH': r = r.patch(url).send(body ?? {}); break;
     default: throw new Error(`unsupported method ${method}`);
   }
-  if (Object.keys(h).length > 0) r = r.set(h);
+  r = r.set(h);
   const res = await r;
   const text = res.text ?? '';
   try { return { status: res.status, json: JSON.parse(text) } as any; }

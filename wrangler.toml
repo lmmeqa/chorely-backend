@@ -1,0 +1,11 @@
+name = "chorely-api"
+main = "src/worker.ts"
+compatibility_date = "2025-08-21"
+
+[placement]
+mode = "smart"
+
+[vars]
+SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
+
+

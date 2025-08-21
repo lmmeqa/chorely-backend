@@ -50,6 +50,7 @@ export async function up(knex: Knex): Promise<void> {
     t.string("name").notNullable();
     // Supabase identity cache
     t.uuid("supabase_user_id").nullable().unique();
+    t.uuid("auth_user_id").nullable().unique().comment('Supabase JWT `sub`');
     t.string("avatar_url").nullable();
     t.string("last_provider").nullable();
     t.timestamp("last_login").nullable();

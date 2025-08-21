@@ -166,3 +166,4 @@ uploads/
 test-results/
 coverage/
 .vitest/
+.dev.vars

@@ -57,14 +57,14 @@ export default class Chore {
   static async addTodos(choreUuid: string, todos: Array<{ name: string }>) {
     ensureUuid(choreUuid);
     return dbGuard(async () => {
-      const todoInserts = todos.map((todo, index) =>
-        db<TodoRow>("todo_items").insert({
+      // Use TodoItem.create for each todo to respect order management
+      for (const todo of todos) {
+        await TodoItem.create({
           chore_id: choreUuid,
           name: todo.name,
-          order: index,
-        })
-      );
-      await Promise.all(todoInserts);
+          // Let TodoItem.create handle order assignment
+        });
+      }
     }, "Failed to add todos to chore");
   }
 

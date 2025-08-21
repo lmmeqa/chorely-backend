@@ -9,6 +9,8 @@ const config: Knex.Config = {
     database: process.env.DB_NAME || "chorely",
     timezone: "America/Los_Angeles",
   },
+  // Allow tests to run in an isolated schema, while keeping public for extensions
+  searchPath: [process.env.DB_SCHEMA || 'public', 'public'],
   migrations: {
     directory: "./migrations", // resolves to backend/src/db/migrations
     extension: "ts",

@@ -19,21 +19,19 @@ export const createChore = controller(async (req, res) => {
     console.error("Failed to add auto-vote for chore", chore.uuid, err);
   }
   
-  // Generate todos asynchronously after chore creation
-  (async () => {
-    try {
-      const generatedTodos = await GptService.generateTodosForChore(
-        req.body.name,
-        req.body.description
-      );
-      if (!generatedTodos || generatedTodos.length === 0) return;
-
+  // Generate todos synchronously after chore creation
+  try {
+    const generatedTodos = await GptService.generateTodosForChore(
+      req.body.name,
+      req.body.description
+    );
+    if (generatedTodos && generatedTodos.length > 0) {
       await Chore.addTodos(chore.uuid, generatedTodos);
-    } catch (err) {
-      // Log and continue; creation of chore should not fail due to todo generation
-      console.error("Failed to generate/insert todos for chore", chore.uuid, err);
     }
-  })();
+  } catch (err) {
+    // Log and continue; creation of chore should not fail due to todo generation
+    console.error("Failed to generate/insert todos for chore", chore.uuid, err);
+  }
 
   res.status(201).json(chore);
 });

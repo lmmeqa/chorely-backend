@@ -16,7 +16,7 @@ export default class TodoItem extends BaseModel<TodoRow> {
     }, "Failed to fetch todo items for chore");
   }
 
-  static async create(todoData: Omit<TodoRow, "id">): Promise<TodoRow> {
+  static async create(todoData: Omit<TodoRow, "id" | "order"> & { order?: number }): Promise<TodoRow> {
     return dbGuard(async () => {
       // If order is specified, ensure it doesn't conflict with existing todos
       if (todoData.order !== undefined) {

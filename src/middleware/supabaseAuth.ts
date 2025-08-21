@@ -38,6 +38,7 @@ export async function verifySupabaseToken(
 			return res.status(500).json({ error: 'Auth not configured' });
 		}
 
+
 		if (!SUPABASE_JWT_SECRET) {
 			if (process.env.MUTE_API_LOGS !== 'true') {
 				console.error(`[AUTH_MW] 500 ${req.method} ${req.originalUrl} - SUPABASE_JWT_SECRET not set`);

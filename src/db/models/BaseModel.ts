@@ -54,6 +54,8 @@ export const dbGuard = async <T>(fn: () => Promise<T>, operation: string): Promi
 };
 
 export const mapFk = (e: any, fallback = "Database constraint violation") => {
+  // Preserve explicit model errors with their original HTTP status codes
+  if (e instanceof ModelError) return e;
   if (e?.code === "23503") {
     const detail = String(e?.detail || "");
     const match = detail.match(/Key \((.*?)\)=\((.*?)\)/);

@@ -1,78 +1,109 @@
-import 'dotenv/config'
-import { drizzle } from 'drizzle-orm/node-postgres'
-import pg from 'pg'
-import {
-  homes, users, userHomes, chores, todoItems
-} from '../src/db/schema'
+// scripts/seed.ts
+import 'dotenv/config';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
+import { homes, users, userHomes, chores, todoItems, choreApprovals } from '../src/db/schema';
 
-const DATABASE_URL = process.env.DATABASE_URL!
-if (!DATABASE_URL) throw new Error('DATABASE_URL not set')
+const DATABASE_URL = process.env.DATABASE_URL!;
+if (!DATABASE_URL) throw new Error('DATABASE_URL not set');
 
-const client = new pg.Client({ connectionString: DATABASE_URL })
-await client.connect()
-const db = drizzle(client)
+const client = new pg.Client({ connectionString: DATABASE_URL });
+await client.connect();
+const db = drizzle(client);
 
-// ---- Wipe (optional, safe for dev) ----
-await db.delete(todoItems)
-await db.delete(chores)
-await db.delete(userHomes)
-// users referenced by many FKs; delete after userHomes
-await db.delete(users)
-await db.delete(homes)
+// Helpers
+const minutesFromNow = (mins: number) => new Date(Date.now() + mins * 60_000);
+const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60_000);
+const img = (slug: string) => `/seed/${slug}.jpg`;
 
-// ---- Seed ----
-const [home] = await db.insert(homes).values({
-  name: 'Demo Home',
-  weeklyPointQuota: 150,
-}).returning()
+// Wipe in FK-safe order (dev only)
+try { await db.execute('DELETE FROM dispute_votes'); } catch {}
+try { await db.execute('DELETE FROM disputes'); } catch {}
+try { await db.execute('DELETE FROM chore_approvals'); } catch {}
+try { await db.execute('DELETE FROM todo_items'); } catch {}
+try { await db.execute('DELETE FROM chores'); } catch {}
+try { await db.execute('DELETE FROM user_homes'); } catch {}
+try { await db.execute('DELETE FROM users'); } catch {}
+try { await db.execute('DELETE FROM home'); } catch {}
 
-const demoEmail = 'demo@example.com'
-const demoSupabaseId = '00000000-0000-0000-0000-000000000001' // replace in real env if you want
+// Demo users & home
+const alice = { email: 'alice@demo.com', name: 'Alice' };
+const bob   = { email: 'bob@demo.com',   name: 'Bob' };
+const charlie = { email: 'charlie@demo.com', name: 'Charlie' };
+await db.insert(users).values([alice, bob, charlie]);
 
-await db.insert(users).values({
-  email: demoEmail,
-  name: 'Demo User',
-  supabaseUserId: demoSupabaseId,
-  authUserId: demoSupabaseId,
-  avatarUrl: null,
-  lastProvider: 'seed',
-  lastLogin: new Date(),
-}).onConflictDoNothing()
+const [home] = await db
+  .insert(homes)
+  .values({ name: 'Demo House', weeklyPointQuota: 120 })
+  .returning();
 
-await db.insert(userHomes).values({
-  userEmail: demoEmail,
+await db.insert(userHomes).values([
+  { userEmail: alice.email, homeId: home.id, points: 40 },
+  { userEmail: bob.email,   homeId: home.id, points: 15 },
+  { userEmail: charlie.email, homeId: home.id, points: 0 },
+]);
+
+// Chores with varied statuses
+const [c1] = await db.insert(chores).values({
+  name: 'Wash Dishes',
+  description: 'Scrub and dry dishes from dinner.',
+  time: minutesFromNow(30),
+  icon: '🍽️',
+  status: 'unclaimed',
+  userEmail: alice.email,
   homeId: home.id,
-  points: 0,
-})
+  points: 20,
+  claimedAt: hoursAgo(2),
+}).returning();
 
-// a couple demo chores
-const [chore1] = await db.insert(chores).values({
-  name: 'Do the dishes',
-  description: 'Load, run, and unload the dishwasher',
-  time: new Date(),
-  icon: '🧽',
-  status: 'unapproved',
-  userEmail: demoEmail,       // nullable; leave null if you want unassigned
-  homeId: home.id,
-  points: 10,
-}).returning()
-
-await db.insert(chores).values({
-  name: 'Vacuum living room',
+const [c2] = await db.insert(chores).values({
+  name: 'Vacuum Living Room',
   description: 'Vacuum under the couch and rug edges',
-  time: new Date(),
+  time: minutesFromNow(60),
   icon: '🧹',
+  status: 'complete',
+  userEmail: bob.email,
+  homeId: home.id,
+  points: 15,
+  completedAt: hoursAgo(1),
+  photoUrl: img('organized-closet-wardrobe'),
+}).returning();
+
+const [c3] = await db.insert(chores).values({
+  name: 'Laundry',
+  description: 'Wash, dry, and fold one load of laundry.',
+  time: minutesFromNow(90),
+  icon: '👕',
+  status: 'claimed',
+  userEmail: charlie.email,
+  homeId: home.id,
+  points: 25,
+  claimedAt: hoursAgo(1),
+}).returning();
+
+const [c4] = await db.insert(chores).values({
+  name: 'Take Out Trash',
+  description: 'Empty all bins and take out the trash.',
+  time: minutesFromNow(45),
+  icon: '🗑️',
   status: 'unapproved',
   userEmail: null,
   homeId: home.id,
-  points: 15,
-})
+  points: 10,
+}).returning();
 
+// Todo items for some chores
 await db.insert(todoItems).values([
-  { choreId: chore1.uuid, name: 'Load dishwasher', order: 0 },
-  { choreId: chore1.uuid, name: 'Run cycle', order: 1 },
-  { choreId: chore1.uuid, name: 'Unload dishes', order: 2 },
-])
+  { choreId: c1.uuid, name: 'Load dishwasher', order: 0 },
+  { choreId: c1.uuid, name: 'Run cycle', order: 1 },
+  { choreId: c1.uuid, name: 'Unload dishes', order: 2 },
+  { choreId: c3.uuid, name: 'Wash', order: 0 },
+  { choreId: c3.uuid, name: 'Dry', order: 1 },
+  { choreId: c3.uuid, name: 'Fold', order: 2 },
+]);
 
-await client.end()
-console.log('✓ Seed complete')
+// Auto-approve an example chore
+await db.insert(choreApprovals).values({ choreUuid: c4.uuid, userEmail: alice.email });
+
+await client.end();
+console.log('✓ Seed complete');

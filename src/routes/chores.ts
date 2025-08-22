@@ -6,6 +6,7 @@ import { requireUser } from "../lib/auth";
 import { requireHomeMemberByParam, requireHomeMemberByChoreUuid } from "../lib/authorization";
 import { chores, todoItems, userHomes } from "../db/schema";
 import { and, count, desc, eq } from "drizzle-orm";
+import { uploadImageToStorage } from "../lib/uploads";
 
 export const choresRoutes = new Hono();
 
@@ -49,9 +50,7 @@ choresRoutes.post("/chores", requireUser, async (c) => {
     // Unique on (choreId, order) in schema; ignore if already exists
     try {
       await db.insert(todoItems).values({ choreId: row.uuid, name: seeds[i], order: i });
-    } catch {
-      // ignore unique conflicts
-    }
+    } catch {}
   }
 
   return c.json(row, 201);
@@ -93,16 +92,15 @@ choresRoutes.get("/chores/available/:homeId", requireUser, requireHomeMemberByPa
 choresRoutes.get("/chores/user", requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get("user") as { email?: string };
-  if (!u?.email) return c.json({ error: "Unauthorized" }, 401);
-  
   const homeId = c.req.query("homeId");
-  if (!homeId) return c.json([], 200);
+  if (!u?.email) return c.json({ error: "auth email required" }, 400);
+  if (!homeId) return c.json({ error: "homeId required" }, 400);
 
   const rows = await db
     .select()
     .from(chores)
-    .where(and(eq(chores.homeId, homeId), eq(chores.userEmail, u.email), eq(chores.status, "claimed")))
-    .orderBy(desc(chores.createdAt));
+    .where(and(eq(chores.homeId, homeId), eq(chores.userEmail, u.email)))
+    .orderBy(desc(chores.updatedAt));
   return c.json(rows);
 });
 
@@ -118,9 +116,36 @@ choresRoutes.get("/chores/:uuid", async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-// PATCH /chores/:uuid/approve → 204 or 404/409
+// GET /chores/count/:homeId → 200 { total, unapproved, unclaimed, claimed, complete }
 // ──────────────────────────────────────────────────────────────────────────────
-choresRoutes.patch("/chores/:uuid/approve", requireUser, async (c) => {
+choresRoutes.get("/chores/count/:homeId", requireUser, requireHomeMemberByParam("homeId"), async (c) => {
+  const db = dbFromEnv(c.env as any);
+  const { homeId } = c.req.param();
+
+  const statuses: (typeof chores.status._.enumValues[number])[] = [
+    "unapproved",
+    "unclaimed",
+    "claimed",
+    "complete",
+  ];
+
+  const counts: Record<string, number> = { total: 0 } as any;
+  for (const s of statuses) {
+    const res = await db
+      .select({ n: count() })
+      .from(chores)
+      .where(and(eq(chores.homeId, homeId), eq(chores.status, s)));
+    counts[s] = Number(res[0]?.n || 0);
+    counts.total += counts[s];
+  }
+
+  return c.json(counts);
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PATCH /chores/:uuid/approve → 204 or 403/404/409
+// ──────────────────────────────────────────────────────────────────────────────
+choresRoutes.patch("/chores/:uuid/approve", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
 
@@ -155,9 +180,8 @@ choresRoutes.patch("/chores/:uuid/claim", requireUser, async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-/** PATCH /chores/:uuid/complete → 204 or 403/404/409
- *  Accepts multipart (image); image is optional for tests, we record completion.
- */
+// PATCH /chores/:uuid/complete → 204 (403/404/409 on errors)
+// Accepts multipart with field `image` and uploads to Supabase Storage. Also works without an image.
 // ──────────────────────────────────────────────────────────────────────────────
 choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
@@ -170,22 +194,31 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
   if (row.status !== "claimed") return c.json({ error: "not claimed" }, 409);
   if (row.userEmail && row.userEmail !== u.email) return c.json({ error: "forbidden" }, 403);
 
-  // If multipart is sent, parse it (no-op storage for tests)
-  const ct = c.req.header("content-type") || "";
+  // Optional image upload
+  const ct = (c.req.header("content-type") || "").toLowerCase();
+  let uploadedUrl: string | null = null;
   if (ct.includes("multipart/form-data")) {
     try {
-      await c.req.parseBody(); // ensures we consume the stream; no storage needed for tests
-    } catch {
-      /* ignore */
+      const form: any = await c.req.parseBody();
+      const image: File | undefined = form?.image;
+      if (image && (image as any).size > 0) {
+        uploadedUrl = await uploadImageToStorage(image, {
+          prefix: `proofs/chores/${uuid}`,
+          filename: (image as any).name || "photo.jpg",
+          contentType: (image as any).type || "image/jpeg",
+        });
+      }
+    } catch (e: any) {
+      console.error("[chore complete] image upload failed:", e?.message || e);
     }
   }
 
-  await db
-    .update(chores)
-    .set({ status: "complete", completedAt: new Date(), updatedAt: new Date() })
-    .where(eq(chores.uuid, uuid));
+  const update: any = { status: "complete", completedAt: new Date(), updatedAt: new Date() };
+  if (uploadedUrl) update.photoUrl = uploadedUrl;
 
-  // Award points to the user
+  await db.update(chores).set(update).where(eq(chores.uuid, uuid));
+
+  // Award points to the user (best-effort)
   try {
     const pointsToAward = row.points;
     const [existing] = await db.select().from(userHomes).where(and(eq(userHomes.homeId, row.homeId), eq(userHomes.userEmail, u.email)));
@@ -195,8 +228,8 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
         .set({ points: existing.points + pointsToAward })
         .where(and(eq(userHomes.homeId, row.homeId), eq(userHomes.userEmail, u.email)));
     }
-  } catch {
-    // Point awarding shouldn't fail the completion
+  } catch (e) {
+    console.error("[chore complete] point awarding failed:", e);
   }
 
   return c.body(null, 204);

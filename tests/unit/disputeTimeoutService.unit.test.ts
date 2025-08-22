@@ -14,7 +14,7 @@ const state = {
   updates: [] as Array<{ uuid: string; update: any }>,
 };
 
-vi.mock('../../src/db/models', () => {
+vi.mock('../../src/db/models/BaseModel', () => {
   const db: any = (table: string) => ({
     where(criteria: any) {
       if (table === 'disputes') {

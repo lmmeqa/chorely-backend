@@ -24,13 +24,12 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      # --- Run Knex migrations against Neon (TCP) ---
-      - name: Run DB migrations (Neon)
+      # --- Run Drizzle migrations against Neon ---
+      - name: Run DB migrations (Drizzle -> Neon)
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-          TS_NODE_TRANSPILE_ONLY: "1"
-        run: npm run knex -- --knexfile src/db/config/knexfile.ts migrate:latest
+        run: npm run db:migrate
 
       # --- Publish the Cloudflare Worker ---
       - name: Publish Worker

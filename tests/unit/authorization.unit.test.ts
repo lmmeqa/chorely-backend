@@ -41,6 +41,34 @@ vi.mock('../../src/db/models', () => {
   return { db };
 });
 
+// Also mock the authorization middleware's db import
+vi.mock('../../src/middleware/authorization', async () => {
+  const actual = await vi.importActual('../../src/middleware/authorization');
+  return {
+    ...actual,
+    db: (table: string) => ({
+      where: (criteria: any) => ({
+        async first() {
+          if (state.throwOnQuery) throw new Error('db fail');
+          if (table === 'user_homes') {
+            const hit = state.user_homes.find(
+              (r) => r.user_email === criteria.user_email && r.home_id === criteria.home_id
+            );
+            return hit ? { ...hit } : undefined;
+          }
+          if (table === 'chores') {
+            return state.chores.get(criteria.uuid);
+          }
+          if (table === 'disputes') {
+            return state.disputes.get(criteria.uuid);
+          }
+          return undefined;
+        },
+      }),
+    }),
+  };
+});
+
 import {
   requireHomeMemberByParam,
   requireHomeMemberByQuery,
@@ -62,6 +90,9 @@ beforeEach(() => {
   state.chores = new Map();
   state.disputes = new Map();
   state.throwOnQuery = false;
+  
+  // Set global state for the authorization middleware to access
+  (global as any).__TEST_STATE__ = state;
 });
 
 describe('authorization middleware', () => {

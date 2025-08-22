@@ -1,4 +1,8 @@
-import { db } from "./index";
+// Legacy BaseModel used in unit tests; the real app uses Drizzle via Worker.
+export const db: any = (table: string) => ({
+  where: (_criteria: any) => ({ first: async () => undefined, update: async () => 0, del: async () => 0 }),
+  fn: { now: () => new Date().toISOString() },
+});
 import { ModelError } from "./ModelError";
 export { ModelError } from "./ModelError";
 

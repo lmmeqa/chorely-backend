@@ -1,5 +1,5 @@
-import { db } from "../db/models";
-import { DisputeVote } from "../db/models";
+// Legacy service used only by unit tests. Real scheduling lives elsewhere.
+import { db } from "../db/models/BaseModel";
 
 export class DisputeTimeoutService {
   private static timeoutInterval: NodeJS.Timeout | null = null;

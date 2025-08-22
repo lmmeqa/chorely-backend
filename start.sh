@@ -1,20 +1,22 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-KNEX="npx knex --knexfile ./src/db/config/knexfile"  # plain JS file
+# Usage:
+#   DATABASE_URL=postgres://app:devpass@localhost:5432/appdb ./start.sh
+#   RUN_SEED=1 ./start.sh    # also runs seed script
 
-echo "⏳  Waiting for Postgres (db:5432)…"
-until pg_isready -h db -p 5432 -U postgres >/dev/null 2>&1; do
-  sleep 1
-done
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export NODE_OPTIONS="--enable-source-maps"
 
-echo "🔓  Unlocking…"
-$KNEX migrate:unlock || true
+: "${DATABASE_URL:=postgres://app:devpass@localhost:5432/appdb}"
+: "${RUN_SEED:=0}"
 
-echo "🧹  Rolling back & re-seeding (dev)…"
-$KNEX migrate:rollback --all
-$KNEX migrate:latest
-$KNEX seed:run
+echo "→ Applying Drizzle migrations to $DATABASE_URL"
+npx drizzle-kit migrate
 
-echo "🚀  Starting backend (ts-node-dev)…"
-exec npx ts-node-dev --respawn --transpile-only --max-old-space-size=4096 src/index
+if [[ "$RUN_SEED" == "1" ]]; then
+  echo "→ Seeding database"
+  node --loader tsx "$ROOT_DIR/scripts/seed.ts"
+fi
+
+echo "✓ DB ready"

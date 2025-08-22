@@ -1,12 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
+// Legacy middleware kept for unit test compatibility.
+// The Hono Worker uses src/lib/auth.ts instead.
 import jwt from 'jsonwebtoken';
+import type { Context } from 'hono';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest {
 	user?: {
 		id: string;
 		email?: string;
 	};
 	claims?: any;
+	headers: Record<string, string | string[] | undefined>;
+	method?: string;
+	originalUrl?: string;
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL as string;
@@ -19,11 +24,11 @@ if (!SUPABASE_URL) {
 
 export async function verifySupabaseToken(
 	req: AuthenticatedRequest,
-	res: Response,
-	next: NextFunction
+	res: any,
+	next: any
 ) {
 	try {
-		const auth = req.headers.authorization || '';
+		const auth = String(req.headers.authorization || '');
 		const token = auth.replace(/^Bearer\s+/i, '');
 		if (!token) {
 			if (process.env.MUTE_API_LOGS !== 'true') {

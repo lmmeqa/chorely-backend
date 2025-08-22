@@ -1,9 +1,8 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { Client } from 'pg';
-import crypto from 'crypto';
-import knex, { Knex } from 'knex';
-import baseConfig from '../../src/db/config/knexfile';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -15,38 +14,47 @@ export default async function() {
   const user = process.env.DB_USER || 'postgres';
   const password = process.env.DB_PASSWORD || 'password';
   const database = process.env.DB_NAME || 'chorely';
+  const connectionString = process.env.DATABASE_URL;
 
-  const schema = `test_${crypto.randomBytes(6).toString('hex')}`;
-  process.env.DB_SCHEMA = schema;
-
-  const client = new Client({ host, port, user, password, database });
+  const client = connectionString
+    ? new Client({ connectionString })
+    : new Client({ host, port, user, password, database });
   await client.connect();
-  await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+  // Ensure required schema/extension exist (tests use public)
+  await client.query(`DROP SCHEMA IF EXISTS drizzle CASCADE`);
+  await client.query(`CREATE SCHEMA IF NOT EXISTS public`);
+  await client.query(`SET search_path TO public`);
+  await client.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+
+  // Clean public schema for fresh Drizzle migration run (ignore if relations missing)
+  await client.query(`DO $$ BEGIN
+    EXECUTE 'DROP TABLE IF EXISTS chore_approvals, dispute_votes, disputes, todo_items, chores, user_homes, users, home CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL; END $$;`);
+  await client.query(`DO $$ BEGIN
+    EXECUTE 'DROP TYPE IF EXISTS chore_status CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL; END $$;`);
+  await client.query(`DO $$ BEGIN
+    EXECUTE 'DROP TYPE IF EXISTS dispute_status CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL; END $$;`);
+  await client.query(`DO $$ BEGIN
+    EXECUTE 'DROP TYPE IF EXISTS vote_type CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL; END $$;`);
+  
+  const db = drizzle(client);
+  
+  // Run Drizzle migrations
+  await migrate(db, { migrationsFolder: './drizzle' });
+
+  // Verify critical tables now exist; fail fast if not
+  const verify = await client.query(`
+    select count(*)::int as n from information_schema.tables
+    where table_schema = 'public' and table_name in ('users','home','chores')
+  `);
+  if ((verify.rows?.[0]?.n ?? 0) < 3) {
+    throw new Error('Drizzle migrations did not create required tables in public schema');
+  }
+  
   await client.end();
-
-  // Enable ts-node so Knex can load TypeScript migrations
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const tsnode = require('ts-node');
-  tsnode.register({ transpileOnly: true, compilerOptions: { module: 'commonjs' } });
-  try { require('tsconfig-paths/register'); } catch {}
-
-  const cfg: Knex.Config = {
-    ...baseConfig,
-    connection: { host, port, user, password, database },
-    searchPath: [schema, 'public'],
-    migrations: {
-      ...(baseConfig.migrations as any),
-      directory: path.resolve(__dirname, '../../src/db/config/migrations'),
-    },
-    seeds: {
-      ...(baseConfig.seeds as any),
-      directory: path.resolve(__dirname, '../../src/db/config/seeds'),
-    },
-  };
-  const k = knex(cfg);
-  await k.migrate.latest();
-  // Optionally: await k.seed.run();
-  await k.destroy();
 }
 
 

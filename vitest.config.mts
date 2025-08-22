@@ -45,6 +45,7 @@ export default defineConfig({
       'default',
       { reporter: './tests/reporters/end-summary.ts', options: {} },
       { reporter: './tests/reporters/fail-logs.ts', options: {} },
+      { reporter: './tests/reporters/results-md.ts', options: {} },
     ],
   },
 });

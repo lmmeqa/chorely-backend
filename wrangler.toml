@@ -7,6 +7,6 @@ compatibility_flags = ["nodejs_compat"]
 mode = "smart"
 
 [vars]
-SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
+SUPABASE_URL = "https://nliyvlqddszmrsnybwrw.supabase.co"
 
 

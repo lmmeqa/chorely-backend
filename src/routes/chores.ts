@@ -6,7 +6,7 @@ import { requireUser } from "../lib/auth";
 import { requireHomeMemberByParam, requireHomeMemberByChoreUuid } from "../lib/authorization";
 import { chores, todoItems, userHomes } from "../db/schema";
 import { and, count, desc, eq } from "drizzle-orm";
-import { uploadImageToStorage } from "../lib/uploads";
+import { uploadToStorageReturnPath, createSignedUrlForPath, isStoragePath } from "../lib/uploads";
 
 export const choresRoutes = new Hono();
 
@@ -56,6 +56,19 @@ choresRoutes.post("/chores", requireUser, async (c) => {
   return c.json(row, 201);
 });
 
+// Helper to sign a chore's photo on the fly
+async function withSignedPhoto(row: any) {
+  if (row?.photoUrl && isStoragePath(row.photoUrl)) {
+    try {
+      const url = await createSignedUrlForPath(row.photoUrl);
+      return { ...row, photoUrl: url };
+    } catch {
+      return row; // fall back to raw path if signing fails
+    }
+  }
+  return row;
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // GET /chores/unapproved/:homeId → 200
 // ──────────────────────────────────────────────────────────────────────────────
@@ -68,7 +81,8 @@ choresRoutes.get("/chores/unapproved/:homeId", requireUser, requireHomeMemberByP
     .from(chores)
     .where(and(eq(chores.homeId, homeId), eq(chores.status, "unapproved")))
     .orderBy(desc(chores.createdAt));
-  return c.json(rows);
+  const signed = await Promise.all(rows.map(withSignedPhoto));
+  return c.json(signed);
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -83,7 +97,8 @@ choresRoutes.get("/chores/available/:homeId", requireUser, requireHomeMemberByPa
     .from(chores)
     .where(and(eq(chores.homeId, homeId), eq(chores.status, "unclaimed")))
     .orderBy(desc(chores.createdAt));
-  return c.json(rows);
+  const signed = await Promise.all(rows.map(withSignedPhoto));
+  return c.json(signed);
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -101,18 +116,20 @@ choresRoutes.get("/chores/user", requireUser, async (c) => {
     .from(chores)
     .where(and(eq(chores.homeId, homeId), eq(chores.userEmail, u.email)))
     .orderBy(desc(chores.updatedAt));
-  return c.json(rows);
+  const signed = await Promise.all(rows.map(withSignedPhoto));
+  return c.json(signed);
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // GET /chores/:uuid → 200 or 404
 // ──────────────────────────────────────────────────────────────────────────────
-choresRoutes.get("/chores/:uuid", async (c) => {
+choresRoutes.get("/chores/:uuid", requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
   const [row] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
   if (!row) return c.json({ error: "not found" }, 404);
-  return c.json(row);
+  const signed = await withSignedPhoto(row);
+  return c.json(signed);
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -196,13 +213,13 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
 
   // Optional image upload
   const ct = (c.req.header("content-type") || "").toLowerCase();
-  let uploadedUrl: string | null = null;
+  let uploadedPath: string | null = null;
   if (ct.includes("multipart/form-data")) {
     try {
       const form: any = await c.req.parseBody();
       const image: File | undefined = form?.image;
       if (image && (image as any).size > 0) {
-        uploadedUrl = await uploadImageToStorage(image, {
+        uploadedPath = await uploadToStorageReturnPath(image, {
           prefix: `proofs/chores/${uuid}`,
           filename: (image as any).name || "photo.jpg",
           contentType: (image as any).type || "image/jpeg",
@@ -214,7 +231,7 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
   }
 
   const update: any = { status: "complete", completedAt: new Date(), updatedAt: new Date() };
-  if (uploadedUrl) update.photoUrl = uploadedUrl;
+  if (uploadedPath) update.photoUrl = uploadedPath; // store path
 
   await db.update(chores).set(update).where(eq(chores.uuid, uuid));
 

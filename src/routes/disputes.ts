@@ -4,7 +4,7 @@ import { dbFromEnv } from '../lib/db';
 import { requireUser } from '../lib/auth';
 import { disputes, disputeVotes, chores, userHomes } from '../db/schema';
 import { eq, desc, and } from 'drizzle-orm';
-import { uploadImageToStorage } from '../lib/uploads';
+import { uploadToStorageReturnPath, createSignedUrlForPath, isStoragePath } from '../lib/uploads';
 
 export const disputesRoutes = new Hono();
 
@@ -17,12 +17,12 @@ const createDisputeSchema = z.object({
 // POST /disputes → 201
 disputesRoutes.post('/disputes', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
-  const u = (c as any).get('user') as { email?: string };
+  const u = c.get('user') as { email?: string };
   if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
 
   const ct = (c.req.header('content-type') || '').toLowerCase();
   let payload: { choreId: string; reason: string; imageUrl?: string } = { choreId: '', reason: '' };
-  let uploadedUrl: string | undefined;
+  let uploadedPath: string | undefined;
 
   if (ct.includes('multipart/form-data')) {
     const form: any = await c.req.parseBody().catch(() => ({}));
@@ -31,7 +31,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
     const image: File | undefined = (form as any)?.image;
     if (image && (image as any).size > 0) {
       try {
-        uploadedUrl = await uploadImageToStorage(image, {
+        uploadedPath = await uploadToStorageReturnPath(image, {
           prefix: `proofs/disputes/${payload.choreId}`,
           filename: (image as any).name || 'photo.jpg',
           contentType: (image as any).type || 'image/jpeg',
@@ -65,7 +65,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
       choreId: payload.choreId,
       disputerEmail: u.email!,
       reason: payload.reason,
-      imageUrl: uploadedUrl || payload.imageUrl || null,
+      imageUrl: uploadedPath || payload.imageUrl || null, // store path if we uploaded, else external URL
       status: 'pending',
     })
     .returning();
@@ -75,7 +75,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
 // POST /disputes/:uuid/vote { vote: 'sustain'|'overrule' }
 disputesRoutes.post('/disputes/:uuid/vote', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
-  const u = (c as any).get('user') as { email?: string };
+  const u = c.get('user') as { email?: string };
   if (!u?.email) return c.json({ error: 'auth email required' }, 400);
   const { uuid } = c.req.param();
   const { vote } = (await c.req.json().catch(() => ({}))) as { vote?: 'sustain' | 'overrule' };
@@ -92,18 +92,36 @@ disputesRoutes.post('/disputes/:uuid/vote', requireUser, async (c) => {
   return c.body(null, 204);
 });
 
-// GET /disputes?homeId=...&status=...
+// Helper to sign a dispute row on the fly
+async function withSignedDispute(row: any) {
+  if (row?.imageUrl && isStoragePath(row.imageUrl)) {
+    try {
+      const url = await createSignedUrlForPath(row.imageUrl);
+      return { ...row, imageUrl: url };
+    } catch {
+      return row;
+    }
+  }
+  return row;
+}
+
+// GET /disputes?homeId=... → 200, 400 if missing
 disputesRoutes.get('/disputes', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
+  const u = c.get('user') as { email?: string };
   const homeId = c.req.query('homeId');
-  const status = c.req.query('status');
-  
-  if (!homeId) {
-    return c.json({ error: 'homeId required' }, 400);
-  }
-  
-  // Query disputes for the specific home
-  let query = db
+  if (!homeId) return c.json({ error: 'homeId required' }, 400);
+
+  // Membership guard
+  const [m] = await db
+    .select({ userEmail: userHomes.userEmail })
+    .from(userHomes)
+    .where(and(eq(userHomes.homeId, homeId), eq(userHomes.userEmail, (u?.email || '') as string)))
+    .limit(1);
+  if (!m) return c.json({ error: 'Forbidden: not a member of this home' }, 403);
+
+  // Filter disputes by home via join to chores
+  const rows = await db
     .select({
       uuid: disputes.uuid,
       choreId: disputes.choreId,
@@ -112,15 +130,15 @@ disputesRoutes.get('/disputes', requireUser, async (c) => {
       imageUrl: disputes.imageUrl,
       status: disputes.status,
       createdAt: disputes.createdAt,
+      updatedAt: disputes.updatedAt,
     })
     .from(disputes)
     .innerJoin(chores, eq(disputes.choreId, chores.uuid))
     .where(eq(chores.homeId, homeId))
     .orderBy(desc(disputes.createdAt));
-    
-  const rows = await query;
-    
-  return c.json(rows);
+
+  const signed = await Promise.all(rows.map(withSignedDispute));
+  return c.json(signed);
 });
 
 // GET /disputes/:uuid → 200
@@ -129,7 +147,8 @@ disputesRoutes.get('/disputes/:uuid', requireUser, async (c) => {
   const { uuid } = c.req.param();
   const [row] = await db.select().from(disputes).where(eq(disputes.uuid, uuid)).limit(1);
   if (!row) return c.json({ error: 'not found' }, 404);
-  return c.json(row);
+  const signed = await withSignedDispute(row);
+  return c.json(signed);
 });
 
 // PATCH /disputes/:uuid/sustain

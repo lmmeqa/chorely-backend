@@ -2,6 +2,7 @@
 import { supabase } from './supabase';
 
 const DEFAULT_BUCKET = process.env.SUPABASE_BUCKET || 'uploads';
+const DEFAULT_TTL = Number(process.env.SUPABASE_SIGNED_URL_TTL ?? 60 * 60); // 1 hour
 
 function sanitize(name: string) {
   return name
@@ -10,8 +11,11 @@ function sanitize(name: string) {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Upload a File/Blob/ArrayBuffer to Supabase Storage and return a public URL. */
-export async function uploadImageToStorage(
+/**
+ * Upload to Supabase Storage (private bucket) and return the **object path**.
+ * We do NOT return a URL here. Use `createSignedUrlForPath` when serving.
+ */
+export async function uploadToStorageReturnPath(
   file: File | Blob | ArrayBuffer,
   opts: { bucket?: string; prefix: string; filename?: string; contentType?: string }
 ): Promise<string> {
@@ -34,6 +38,23 @@ export async function uploadImageToStorage(
   });
   if (error) throw error;
 
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  return path; // store this in DB
+}
+
+/** Create a fresh signed URL later for an existing object path. */
+export async function createSignedUrlForPath(
+  path: string,
+  opts?: { bucket?: string; expiresIn?: number }
+): Promise<string> {
+  const bucket = opts?.bucket || DEFAULT_BUCKET;
+  const expiresIn = Math.max(60, Number(opts?.expiresIn ?? DEFAULT_TTL));
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+/** Helper: determine if a stored string looks like a Storage path. */
+export function isStoragePath(value: string | null | undefined): value is string {
+  if (!value) return false;
+  return !/^https?:\/\//i.test(value); // anything not starting with http(s) we treat as path
 }

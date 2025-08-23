@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: chorely-backend-prod
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    healthCheckPath: /public/ping
+    # no seeding in prod; run your migration command here if you have one
+    # postDeployCommand: npm run migrate
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_BUCKET
+        value: uploads
+      - key: SUPABASE_SIGNED_URL_TTL
+        value: "3600"
+      - key: SUPABASE_URL
+        fromSecret: supabase-url
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        fromSecret: supabase-service-role-key
+      - key: DATABASE_URL
+        fromSecret: neon-prod-database-url

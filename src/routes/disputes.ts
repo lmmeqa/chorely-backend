@@ -70,7 +70,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
         console.log('[dispute create] Starts with JPEG marker:', firstBytes[0] === 0xFF && firstBytes[1] === 0xD8);
         
         // Upload to storage
-        uploadedPath = await uploadToStorageReturnPath(bytes, {
+        uploadedPath = await uploadToStorageReturnPath(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), {
           prefix: `proofs/disputes/${body.choreId}`,
           filename: body.image.filename || 'dispute.jpg',
           contentType: body.image.contentType || 'image/jpeg',

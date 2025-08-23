@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { requireUser } from "../lib/auth";
-import { dbFromEnv } from "../lib/db.worker";
+import { requireSelfEmailByParam } from "../lib/authorization";
+import { dbFromEnv } from "../lib/db";
 import { users } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -121,17 +122,20 @@ usersRoutes.post("/user", async (c) => {
         }
     }
 
-    // idempotent create
-    const [profile] = await db.insert(users).values({
-        email,
-        name,
-        lastLogin: new Date(),
-        updatedAt: new Date(),
-    }).onConflictDoNothing().returning();
-
-    if (!profile) {
-        // already exists
-        return c.json({ error: "exists" }, 409);
+    // idempotent create - use Drizzle ORM with proper conflict handling
+    const { users } = await import("../db/schema");
+    try {
+        await db.insert(users).values({
+            email,
+            name,
+            lastLogin: new Date(),
+        }).onConflictDoNothing();
+    } catch (e: any) {
+        // Check if it's a conflict error (user already exists)
+        if (e.message?.includes('duplicate key') || e.message?.includes('already exists')) {
+            return c.json({ error: "exists" }, 409);
+        }
+        throw e;
     }
 
     for (const homeId of homeIds) {
@@ -163,7 +167,7 @@ usersRoutes.post("/user/join", async (c) => {
 });
 
 // GET /user/:email/homes
-usersRoutes.get("/user/:email/homes", async (c) => {
+usersRoutes.get("/user/:email/homes", requireUser, requireSelfEmailByParam('email'), async (c) => {
     const db = dbFromEnv(c.env as any);
     const email = String(c.req.param("email")).toLowerCase();
     const { userHomes, homes } = await import("../db/schema");
@@ -177,7 +181,7 @@ usersRoutes.get("/user/:email/homes", async (c) => {
 });
 
 // Alias expected by tests: /user/:email/home
-usersRoutes.get("/user/:email/home", async (c) => {
+usersRoutes.get("/user/:email/home", requireUser, requireSelfEmailByParam('email'), async (c) => {
     const db = dbFromEnv(c.env as any);
     const email = String(c.req.param("email")).toLowerCase();
     const { userHomes, homes } = await import("../db/schema");

@@ -1,7 +1,8 @@
 import path from 'path';
 import dotenv from 'dotenv';
 
-// Load backend/tests/.env first so tests can define their own env (no logging of values)
+// Load main .env first, then tests/.env to override if needed
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 
@@ -20,6 +21,10 @@ if (process.env.EXPO_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
   process.env.SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 }
 if (!process.env.SUPABASE_URL) { process.env.SUPABASE_URL = 'http://localhost:54321'; defaulted.push('SUPABASE_URL'); }
+if (process.env.SUPABASE_ANON_KEY && !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+}
+if (!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) { process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'test_anon_key'; defaulted.push('EXPO_PUBLIC_SUPABASE_ANON_KEY'); }
 if (!process.env.SUPABASE_JWT_SECRET) { process.env.SUPABASE_JWT_SECRET = 'devsecret'; defaulted.push('SUPABASE_JWT_SECRET'); }
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) { process.env.SUPABASE_SERVICE_ROLE_KEY = 'service_role_dev'; defaulted.push('SUPABASE_SERVICE_ROLE_KEY'); }
 

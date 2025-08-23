@@ -1,0 +1,493 @@
+{
+  "info": {
+    "name": "Chorely API",
+    "description": "Complete API collection for Chorely chore management app. Includes user authentication, home management, chores, disputes, and more.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8787",
+      "type": "string"
+    },
+    {
+      "key": "supabaseUrl",
+      "value": "https://nliyvlqddszmrsnybwrw.supabase.co",
+      "type": "string"
+    },
+    {
+      "key": "supabaseAnonKey",
+      "value": "YOUR_SUPABASE_ANON_KEY",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "test@example.com",
+      "type": "string"
+    },
+    {
+      "key": "homeId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "1. Supabase Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{supabaseAnonKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"password123\",\n  \"data\": {\n    \"name\": \"Test User\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{supabaseUrl}}/auth/v1/signup",
+              "host": ["{{supabaseUrl}}"],
+              "path": ["auth", "v1", "signup"]
+            },
+            "description": "Create a new user account in Supabase. This will send a confirmation email."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Supabase Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract access token from response",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.access_token);",
+                  "    console.log('Access token set:', response.access_token.substring(0, 20) + '...');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{supabaseAnonKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+              "host": ["{{supabaseUrl}}"],
+              "path": ["auth", "v1", "token"],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": "Login with email and password to get an access token."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Authenticate User (Backend)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/authenticate",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "authenticate"]
+            },
+            "description": "Authenticate the user with the backend using the Supabase JWT token. This creates/updates the user profile in the database."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["me"]
+            },
+            "description": "Get the current user's profile information."
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentication flow using Supabase for user management and JWT tokens."
+    },
+    {
+      "name": "🏠 Home Management",
+      "item": [
+        {
+          "name": "1. Create Home",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract home ID from response",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('homeId', response.id);",
+                  "    console.log('Home ID set:', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Home\",\n  \"weeklyPointQuota\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/homes",
+              "host": ["{{baseUrl}}"],
+              "path": ["homes"]
+            },
+            "description": "Create a new home for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get User Homes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/{{userEmail}}/homes",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "{{userEmail}}", "homes"]
+            },
+            "description": "Get all homes that the user is a member of."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Join Home",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"homeId\": \"{{homeId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "join"]
+            },
+            "description": "Join an existing home (if you have the home ID)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Home management operations including creating homes and joining existing ones."
+    },
+    {
+      "name": "🧹 Chores",
+      "item": [
+        {
+          "name": "1. Create Chore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Clean Kitchen\",\n  \"description\": \"Clean the kitchen counter and sink\",\n  \"points\": 10,\n  \"homeId\": \"{{homeId}}\",\n  \"urgency\": \"medium\",\n  \"icon\": \"kitchen\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chores",
+              "host": ["{{baseUrl}}"],
+              "path": ["chores"]
+            },
+            "description": "Create a new chore in a home."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get Chores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chores?homeId={{homeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["chores"],
+              "query": [
+                {
+                  "key": "homeId",
+                  "value": "{{homeId}}"
+                }
+              ]
+            },
+            "description": "Get all chores for a specific home."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Complete Chore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"choreId\": \"CHORE_UUID_HERE\",\n  \"verificationImage\": \"data:image/jpeg;base64,...\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chores/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["chores", "complete"]
+            },
+            "description": "Mark a chore as completed with optional verification image."
+          },
+          "response": []
+        }
+      ],
+      "description": "Chore management operations including creating, viewing, and completing chores."
+    },
+    {
+      "name": "📊 Points & Activities",
+      "item": [
+        {
+          "name": "1. Get User Points",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/points?homeId={{homeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["points"],
+              "query": [
+                {
+                  "key": "homeId",
+                  "value": "{{homeId}}"
+                }
+              ]
+            },
+            "description": "Get points for all users in a home."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get Activities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activities?homeId={{homeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["activities"],
+              "query": [
+                {
+                  "key": "homeId",
+                  "value": "{{homeId}}"
+                }
+              ]
+            },
+            "description": "Get recent activities in a home."
+          },
+          "response": []
+        }
+      ],
+      "description": "Points tracking and activity history."
+    },
+    {
+      "name": "⚖️ Disputes & Approvals",
+      "item": [
+        {
+          "name": "1. Create Dispute",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"choreId\": \"CHORE_UUID_HERE\",\n  \"reason\": \"Chore was not completed properly\",\n  \"evidenceImage\": \"data:image/jpeg;base64,...\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/disputes",
+              "host": ["{{baseUrl}}"],
+              "path": ["disputes"]
+            },
+            "description": "Create a dispute for a completed chore."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Vote on Dispute",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disputeId\": \"DISPUTE_UUID_HERE\",\n  \"vote\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/dispute-votes",
+              "host": ["{{baseUrl}}"],
+              "path": ["dispute-votes"]
+            },
+            "description": "Vote on a dispute (approve/reject)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Dispute management and voting system."
+    },
+    {
+      "name": "🔧 Utility",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "ping"]
+            },
+            "description": "Simple health check endpoint."
+          },
+          "response": []
+        }
+      ],
+      "description": "Utility endpoints for testing and monitoring."
+    }
+  ]
+}

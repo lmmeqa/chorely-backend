@@ -1,34 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
+
+import { json, agent } from '../../helpers/hono-test-client';
 import { buildFourPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
-
-const agent = request(app);
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    case 'PATCH': r = r.patch(url).send(body ?? {}); break;
-    case 'PUT': r = r.put(url).send(body ?? {}); break;
-    case 'DELETE': r = r.delete(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try {
-    return { status: res.status, json: JSON.parse(text) } as any;
-  } catch {
-    return { status: res.status, json: text } as any;
-  }
-}
-
 describe('Four-Person House Happy Path', () => {
   const scenario = buildFourPersonHouse();
   const [alice, bob, diana, charlie] = scenario.users;
@@ -112,12 +88,9 @@ describe('Four-Person House Happy Path', () => {
     const approveStatus = await json('GET', `/approvals/${uuid}`, undefined, { Authorization: `Bearer ${tokenB}` });
     assert.equal(approveStatus.status, 200);
     assert.ok(approveStatus.json.votes >= approveStatus.json.required);
-    const claim = await request(app).patch(`/chores/${uuid}/claim`).set({ Authorization: `Bearer ${tokenC}` });
+    const claim = await agent.patch(`/chores/${uuid}/claim`).set({ Authorization: `Bearer ${tokenC}` });
     assert.equal(claim.status, 204);
-    const complete = await request(app)
-      .patch(`/chores/${uuid}/complete`)
-      .set({ Authorization: `Bearer ${tokenC}` })
-      .attach('image', Buffer.from([1,2,3]), { filename: 'fp.jpg', contentType: 'image/jpeg' });
+    const complete = await agent.patch(`/chores/${uuid}/complete`).set({ Authorization: `Bearer ${tokenC}` }).attach('image', Buffer.from([1,2,3]), { filename: 'fp.jpg', contentType: 'image/jpeg' });
     assert.equal(complete.status, 204);
 
     // Raise dispute by Diana
@@ -126,10 +99,10 @@ describe('Four-Person House Happy Path', () => {
     const disputeUuid = d.json.uuid as string;
 
     // Sustain by Diana
-    const v = await request(app).post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenD}` }).send({ vote: 'sustain' });
+    const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenD}` }).send({ vote: 'sustain' });
     assert.equal(v.status, 204);
     // A second sustain vote (e.g., Alice) to reach threshold (2 of 3 eligible)
-    const sustainVote2 = await request(app).post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` }).send({ vote: 'sustain' });
+    const sustainVote2 = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` }).send({ vote: 'sustain' });
     assert.equal(sustainVote2.status, 204);
 
     const disputeStatus = await json('GET', `/dispute-votes/${disputeUuid}/status`, undefined, { Authorization: `Bearer ${tokenC}` });
@@ -141,5 +114,3 @@ describe('Four-Person House Happy Path', () => {
     await cleanupTestData();
   });
 });
-
-

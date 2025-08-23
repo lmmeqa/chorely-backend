@@ -1,29 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll, vi } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
+
+import { json, agent } from '../../helpers/hono-test-client';
 import { buildTwoPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { createOrJoinUser } from '../helpers/users';
 import { cleanupTestData } from '../helpers/reset-backend';
-
-const agent = request(app);
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try { return { status: res.status, json: JSON.parse(text) } as any; }
-  catch { return { status: res.status, json: text } as any; }
-}
-
 describe('Todos E2E', () => {
   const scenario = buildTwoPersonHouse();
   const [alice] = scenario.users;
@@ -155,4 +137,3 @@ describe('Todos E2E', () => {
     await cleanupTestData();
   });
 });
-

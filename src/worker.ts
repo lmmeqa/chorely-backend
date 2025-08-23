@@ -9,6 +9,8 @@ import { pointsRoutes } from './routes/points';
 import { activitiesRoutes } from './routes/activities';
 import { todosRoutes } from './routes/todos';
 import { disputeVotesRoutes } from './routes/dispute-votes';
+import { logger } from './middleware/logger';
+import type { Bindings } from './lib/db';
 
 // Optional local static serving for /seed/* when running under Node (dev/tests)
 const addLocalStatic = (app: any) => {
@@ -33,10 +35,64 @@ const addLocalStatic = (app: any) => {
   } catch { /* noop */ }
 };
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Add environment to context middleware
+app.use('*', async (c, next) => {
+  // Make env available to all routes via c.env
+  await next();
+});
+
+// Add comprehensive logging middleware
+app.use('*', logger);
+
 app.use('*', cors());
 
 app.get('/public/ping', (c) => c.json({ pong: true }));
+
+// Add a tiny /internal/db-ping to verify from the app
+app.get('/internal/db-ping', async (c) => {
+  const db = (await import('./lib/db')).dbFromEnv(c.env as any);
+  // @ts-ignore - drizzle has .execute
+  const res = await (db as any).execute('select current_user, current_database()');
+  return c.json({ ok: true, res });
+});
+
+// Add a debug endpoint to check completed chores
+app.get('/internal/debug-chores', async (c) => {
+  const db = (await import('./lib/db')).dbFromEnv(c.env as any);
+  const { chores, homes } = await import('./db/schema');
+  const { eq } = await import('drizzle-orm');
+  
+  // Get all homes and their chores
+  const allHomes = await db.select().from(homes);
+  const allChores = await db.select().from(chores);
+  
+  const homeStats = allHomes.map(home => {
+    const homeChores = allChores.filter(c => c.homeId === home.id);
+    const completedChores = homeChores.filter(c => c.status === 'complete');
+    
+    return {
+      id: home.id,
+      name: home.name,
+      total: homeChores.length,
+      completed: completedChores.length,
+      completedChores: completedChores.map(c => ({
+        uuid: c.uuid,
+        name: c.name,
+        status: c.status,
+        completedAt: c.completedAt,
+        userEmail: c.userEmail
+      }))
+    };
+  });
+  
+  return c.json({ 
+    homes: homeStats,
+    totalChores: allChores.length,
+    totalCompleted: allChores.filter(c => c.status === 'complete').length
+  });
+});
 
 // Mount routes
 app.route('/', usersRoutes);

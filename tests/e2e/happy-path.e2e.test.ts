@@ -1,37 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import app from '../../src/app';
+import { json, agent } from '../helpers/hono-test-client';
 import { supabaseSignupOrLogin } from './helpers/supabase';
 import { buildTwoPersonHouse } from './helpers/test-scenarios';
 import { resetBackendForEmails, cleanupTestData } from './helpers/reset-backend';
 
 // Tests rely on tests/.env via tests/config/env.ts
-
-const agent = request(app);
-
-// use shared helper
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    case 'PATCH': r = r.patch(url).send(body ?? {}); break;
-    case 'PUT': r = r.put(url).send(body ?? {}); break;
-    case 'DELETE': r = r.delete(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try {
-    return { status: res.status, json: JSON.parse(text) } as any;
-  } catch {
-    return { status: res.status, json: text } as any;
-  }
-}
 
 describe('Chorely API E2E', () => {
   const scenario = buildTwoPersonHouse();
@@ -78,7 +52,7 @@ describe('Chorely API E2E', () => {
   it('lists homes and user homes', async () => {
     const r1 = await json('GET', '/homes');
     assert.equal(r1.status, 200);
-    const r2 = await json('GET', `/user/${encodeURIComponent(user1)}/home`);
+    const r2 = await json('GET', `/user/${encodeURIComponent(user1)}/home`, undefined, { Authorization: `Bearer ${token1}` });
     assert.equal(r2.status, 200);
     assert.ok(Array.isArray(r2.json));
     assert.ok(r2.json.find((h: any) => h.id === homeId));
@@ -110,10 +84,10 @@ describe('Chorely API E2E', () => {
     assert.equal(create.status, 201);
     choreUuid = create.json.uuid;
 
-    const approve = await agent.patch(`/chores/${choreUuid}/approve`).set({ Authorization: `Bearer ${token1}`, Connection: 'close' });
+    const approve = await agent.patch(`/chores/${choreUuid}/approve`).set({ Authorization: `Bearer ${token1}` });
     assert.equal(approve.status, 204);
 
-    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${token1}`, Connection: 'close' });
+    const claim = await agent.patch(`/chores/${choreUuid}/claim`).set({ Authorization: `Bearer ${token1}` });
     assert.equal(claim.status, 204);
 
     const complete = await agent
@@ -153,7 +127,7 @@ describe('Chorely API E2E', () => {
     assert.equal(d.status, 201);
     disputeUuid = d.json.uuid;
 
-    const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${token2}`, Connection: 'close' }).send({ vote: 'sustain' });
+    const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${token2}` }).send({ vote: 'sustain' });
     assert.equal(v.status, 204);
 
     const st = await json('GET', `/dispute-votes/${disputeUuid}/status`, undefined, { Authorization: `Bearer ${token1}` });
@@ -163,6 +137,20 @@ describe('Chorely API E2E', () => {
     const r = await json('GET', `/points/${homeId}/${encodeURIComponent(user1)}`, undefined, { Authorization: `Bearer ${token1}` });
     assert.equal(r.status, 200);
     assert.ok(r.json.points >= 0);
+  });
+
+  it('sustained dispute automatically reverts chore status from complete to claimed', async () => {
+    // The chore status should already be reverted to claimed because automatic 
+    // dispute resolution happened in the previous test when the sustain vote was cast
+    const chore = await json('GET', `/chores/${choreUuid}`, undefined, { Authorization: `Bearer ${token1}` });
+    assert.equal(chore.status, 200);
+    assert.equal(chore.json.status, 'claimed');
+    assert.equal(chore.json.completedAt, null);
+    
+    // Verify the dispute is marked as sustained
+    const dispute = await json('GET', `/disputes/${disputeUuid}`, undefined, { Authorization: `Bearer ${token1}` });
+    assert.equal(dispute.status, 200);
+    assert.equal(dispute.json.status, 'sustained');
   });
 
   afterAll(async () => {

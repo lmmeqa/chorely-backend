@@ -1,14 +1,14 @@
 import { DatabaseError } from "pg";
-import { ModelError } from "../db/models/ModelError";
+import { ModelError } from "../lib/ModelError";
 import type { Context } from "hono";
-import type { Request, Response, NextFunction } from "express";
+// Express types only used in conditional checks, removing import to fix Worker build
 
 /** Error handling middleware: converts every error into JSON */
 export const errorHandler = (
   err: unknown, 
-  reqOrC: Request | Context, 
-  res?: Response, 
-  _next?: NextFunction
+  reqOrC: any, 
+  res?: any, 
+  _next?: any
 ) => {
   // Handle both Express and Hono contexts
   const isHono = 'req' in reqOrC;
@@ -30,7 +30,7 @@ export const errorHandler = (
         code: err.code
       }, err.http as any);
     } else if (resObj) {
-      return (resObj as Response).status(err.http).json({
+      return resObj.status(err.http).json({
         error: err.message,
         code: err.code
       });
@@ -55,7 +55,7 @@ export const errorHandler = (
             code: "DUPLICATE"
           }, 409);
         } else if (resObj) {
-          return (resObj as Response).status(409).json({
+          return resObj.status(409).json({
             error: `A record with ${field} '${value}' already exists`,
             code: "DUPLICATE"
           });
@@ -69,7 +69,7 @@ export const errorHandler = (
             code: "NOT_FOUND"
           }, 404);
         } else if (resObj) {
-          return (resObj as Response).status(404).json({
+          return resObj.status(404).json({
             error: `Referenced ${field} '${value}' does not exist`,
             code: "NOT_FOUND"
           });
@@ -84,7 +84,7 @@ export const errorHandler = (
             code: "SERVER_ERROR"
           }, 500);
         } else if (resObj) {
-          return (resObj as Response).status(500).json({
+          return resObj.status(500).json({
             error: err.message || "An unexpected error occurred",
             code: "SERVER_ERROR"
           });
@@ -99,7 +99,7 @@ export const errorHandler = (
       code: "SERVER_ERROR"
     }, 500);
   } else if (resObj) {
-    return (resObj as Response).status(500).json({
+    return resObj.status(500).json({
       error: "An unexpected error occurred",
       code: "SERVER_ERROR"
     });

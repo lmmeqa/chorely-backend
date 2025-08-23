@@ -1,37 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import app from '../../src/app';
+import { json } from '../helpers/hono-test-client';
 import { supabaseSignupOrLogin } from './helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from './helpers/reset-backend';
 import { assertMatches, ApprovalStatusSchema } from './helpers/contracts';
 import { buildTwoPersonHouse } from './helpers/test-scenarios';
 
 // Tests rely on tests/.env via tests/config/env.ts
-
-const agent = request(app);
-
-// use shared helper
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    case 'PATCH': r = r.patch(url).send(body ?? {}); break;
-    case 'DELETE': r = r.delete(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try {
-    return { status: res.status, json: JSON.parse(text) } as any;
-  } catch {
-    return { status: res.status, json: text } as any;
-  }
-}
 
 describe('Approvals E2E', () => {
   const scenario = buildTwoPersonHouse();

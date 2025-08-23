@@ -19,28 +19,34 @@ export type Bindings = {
 let __nodeDb: ReturnType<typeof drizzleNode> | null = null;
 let __nodeConnStr = '';
 
+function maskDbUrl(u: string) {
+  try {
+    const x = new URL(u);
+    return `${x.protocol}//${x.username || '<user>'}@${x.hostname}:${x.port || '5432'}${x.pathname}`;
+  } catch {
+    return '<invalid DATABASE_URL>';
+  }
+}
+
 export function dbFromEnv(env: Bindings) {
-  // If running under Node (tests), use pg.Pool
-  if (typeof (globalThis as any).process?.versions?.node === 'string') {
-    const conn = env.DATABASE_URL || buildNodeConnStr(env);
-    if (!__nodeDb || __nodeConnStr !== conn) {
-      __nodeConnStr = conn;
-      const pool = new pg.Pool({ connectionString: conn, max: 10, idleTimeoutMillis: 30_000 } as any);
-      __nodeDb = drizzleNode(pool);
+  const isNodeEnv = typeof (globalThis as any).process?.versions?.node === 'string';
+
+  // ✅ Node (local/dev/tests): use DATABASE_URL directly (matches .env)
+  if (isNodeEnv) {
+    if (!env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is required in local/dev Node environment');
+    }
+    if (!__nodeDb || __nodeConnStr !== env.DATABASE_URL) {
+      const pool = new pg.Pool({ connectionString: env.DATABASE_URL, max: 10 });
+      __nodeDb = drizzleNode(pool, { logger: !process.env.MUTE_DB_LOGS });
+      __nodeConnStr = env.DATABASE_URL;
+      console.log('[db] Node driver connected →', maskDbUrl(env.DATABASE_URL));
     }
     return __nodeDb!;
   }
 
-  // Default (worker): Neon HTTP
+  // Workers/edge (e.g., Neon HTTP)
   const sql = neon(env.DATABASE_URL);
+  console.log('[db] Neon HTTP driver →', maskDbUrl(env.DATABASE_URL));
   return drizzleNeon(sql);
-}
-
-function buildNodeConnStr(env: Bindings) {
-  const host = env.DB_HOST || 'localhost';
-  const port = String(env.DB_PORT || '5433'); // default to 5433 for tests
-  const user = env.DB_USER || 'postgres';
-  const password = env.DB_PASSWORD || 'password';
-  const database = env.DB_NAME || 'postgres';
-  return `postgres://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
 }

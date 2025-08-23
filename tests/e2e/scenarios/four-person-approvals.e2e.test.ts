@@ -1,33 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
+
+import { json, agent } from '../../helpers/hono-test-client';
 import { buildFourPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
-
-const agent = request(app);
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    case 'PATCH': r = r.patch(url).send(body ?? {}); break;
-    case 'DELETE': r = r.delete(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try {
-    return { status: res.status, json: JSON.parse(text) } as any;
-  } catch {
-    return { status: res.status, json: text } as any;
-  }
-}
-
 describe('Four-Person Approvals E2E', () => {
   const scenario = buildFourPersonHouse();
   const [alice, bob, diana, charlie] = scenario.users;
@@ -94,7 +71,7 @@ describe('Four-Person Approvals E2E', () => {
     }, { Authorization: `Bearer ${tokenC}` });
     assert.equal(create.status, 201);
     const uuid = create.json.uuid as string;
-    const claim = await request(app).patch(`/chores/${uuid}/claim`).set({ Authorization: `Bearer ${tokenC}` });
+    const claim = await agent.patch(`/chores/${uuid}/claim`).set({ Authorization: `Bearer ${tokenC}` });
     assert.equal(claim.status, 409);
   });
 
@@ -102,5 +79,3 @@ describe('Four-Person Approvals E2E', () => {
     await cleanupTestData();
   });
 });
-
-

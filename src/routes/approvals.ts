@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { dbFromEnv } from "../lib/db.worker";
+import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByChoreUuid } from "../lib/authorization";
 import { choreApprovals, chores, userHomes } from "../db/schema";

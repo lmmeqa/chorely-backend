@@ -3,16 +3,36 @@ main = "dist/worker.js"
 compatibility_date = "2025-08-22"
 compatibility_flags = ["nodejs_compat"]
 
+# Production environment (default)
 [vars]
-# Non-secret env (override in dashboard if you like)
 SUPABASE_URL = "https://nliyvlqddszmrsnybwrw.supabase.co"
 SUPABASE_BUCKET = "uploads"
 SUPABASE_SIGNED_URL_TTL = "3600"
 
-# Set secrets via: npx wrangler secret put DATABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-# DATABASE_URL should be your Neon branch URL with sslmode=require
+# Set secrets via: 
+# npx wrangler secret put DATABASE_URL
+# npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# DATABASE_URL should be your Neon main branch URL with sslmode=require
 
-# Optional: if you want a custom domain later
-# routes = [
-#   { pattern = "api.yourdomain.com/*", zone_name = "yourdomain.com" }
-# ]
+# Staging environment
+[env.staging]
+name = "chorely-backend-staging"
+
+[env.staging.vars]
+SUPABASE_URL = "https://nliyvlqddszmrsnybwrw.supabase.co"
+SUPABASE_BUCKET = "uploads-staging"
+SUPABASE_SIGNED_URL_TTL = "3600"
+
+# Set staging secrets via:
+# npx wrangler secret put DATABASE_URL --env staging
+# npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env staging
+# DATABASE_URL should be your Neon staging branch URL with sslmode=require
+
+# Optional: custom domains
+# [routes]
+# pattern = "api.yourdomain.com/*"
+# zone_name = "yourdomain.com"
+
+# [env.staging.routes]
+# pattern = "staging-api.yourdomain.com/*" 
+# zone_name = "yourdomain.com"

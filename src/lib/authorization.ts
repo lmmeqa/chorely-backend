@@ -62,3 +62,20 @@ export function requireHomeMemberByChoreUuid(paramName: string) {
     return next();
   };
 }
+
+export function requireSelfEmailByParam(paramName: string) {
+  return async (c: Context, next: Next) => {
+    const u = (c as any).get('user') as { email?: string };
+    const emailParam = c.req.param(paramName);
+    
+    if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
+    if (!emailParam) return c.json({ error: `Missing param ${paramName}` }, 400);
+    
+    // Ensure the user can only access their own profile
+    if (u.email.toLowerCase() !== emailParam.toLowerCase()) {
+      return c.json({ error: 'Forbidden: can only access your own profile' }, 403);
+    }
+    
+    return next();
+  };
+}

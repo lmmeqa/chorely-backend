@@ -1,7 +1,7 @@
 // src/routes/chores.ts
 import { Hono } from "hono";
 import { z } from "zod";
-import { dbFromEnv } from "../lib/db.worker";
+import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByParam, requireHomeMemberByChoreUuid } from "../lib/authorization";
 import { chores, todoItems, userHomes } from "../db/schema";
@@ -59,10 +59,13 @@ choresRoutes.post("/chores", requireUser, async (c) => {
 // Helper to sign a chore's photo on the fly
 async function withSignedPhoto(row: any) {
   if (row?.photoUrl && isStoragePath(row.photoUrl)) {
+    console.log(`[withSignedPhoto] Processing photoUrl: ${row.photoUrl}`);
     try {
       const url = await createSignedUrlForPath(row.photoUrl);
+      console.log(`[withSignedPhoto] Generated signed URL: ${url}`);
       return { ...row, photoUrl: url };
-    } catch {
+    } catch (e) {
+      console.error(`[withSignedPhoto] Failed to sign URL for ${row.photoUrl}:`, e);
       return row; // fall back to raw path if signing fails
     }
   }
@@ -211,23 +214,61 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
   if (row.status !== "claimed") return c.json({ error: "not claimed" }, 409);
   if (row.userEmail && row.userEmail !== u.email) return c.json({ error: "forbidden" }, 403);
 
-  // Optional image upload
+  // Optional image upload - handle JSON with base64 or multipart data
   const ct = (c.req.header("content-type") || "").toLowerCase();
   let uploadedPath: string | null = null;
-  if (ct.includes("multipart/form-data")) {
+  console.log(`[chore complete] Content-Type: ${ct}`);
+  
+  // Try to parse JSON body first for base64 image data
+  let jsonBody: any = null;
+  try {
+    const bodyText = await c.req.text();
+    if (bodyText && ct.includes("application/json")) {
+      jsonBody = JSON.parse(bodyText);
+      console.log(`[chore complete] Parsed JSON body with keys: ${Object.keys(jsonBody).join(', ')}`);
+    }
+  } catch (e) {
+    console.log(`[chore complete] No valid JSON body found`);
+  }
+  
+  if (jsonBody?.image?.data) {
+    // Handle base64 encoded image data
+    console.log(`[chore complete] Processing base64 image data`);
+    
     try {
-      const form: any = await c.req.parseBody();
-      const image: File | undefined = form?.image;
-      if (image && (image as any).size > 0) {
-        uploadedPath = await uploadToStorageReturnPath(image, {
+      const base64Data = jsonBody.image.data;
+      const filename = jsonBody.image.filename || "chore-completion.jpg";
+      const imageContentType = jsonBody.image.contentType || "image/jpeg";
+      
+      console.log(`[chore complete] Base64 data length: ${base64Data.length} chars`);
+      
+      // Decode base64 to buffer
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      console.log(`[chore complete] Decoded binary data - size: ${imageBuffer.length} bytes`);
+      
+      // Log first few bytes to verify image data integrity
+      const firstBytes = imageBuffer.slice(0, 20);
+      console.log(`[chore complete] First 20 bytes (hex): ${firstBytes.toString('hex')}`);
+      console.log(`[chore complete] Starts with JPEG marker: ${firstBytes[0] === 0xFF && firstBytes[1] === 0xD8}`);
+      
+      if (imageBuffer.length > 0) {
+        console.log(`[chore complete] Processing base64 image upload: ${filename}, size: ${imageBuffer.length}`);
+        uploadedPath = await uploadToStorageReturnPath(imageBuffer, {
           prefix: `proofs/chores/${uuid}`,
-          filename: (image as any).name || "photo.jpg",
-          contentType: (image as any).type || "image/jpeg",
+          filename: filename,
+          contentType: imageContentType,
+          env: c.env,
         });
+        console.log(`[chore complete] Base64 image uploaded successfully to: ${uploadedPath}`);
+      } else {
+        console.log("[chore complete] Base64 image data is empty");
       }
     } catch (e: any) {
-      console.error("[chore complete] image upload failed:", e?.message || e);
+      console.error("[chore complete] base64 image upload failed:", e?.message || e);
+      console.error("[chore complete] full error:", e);
     }
+  } else {
+    console.log(`[chore complete] No image processing - Content-Type: ${ct}`);
   }
 
   const update: any = { status: "complete", completedAt: new Date(), updatedAt: new Date() };

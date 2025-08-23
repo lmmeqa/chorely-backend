@@ -14,7 +14,67 @@ disputeVotesRoutes.post('/dispute-votes/:disputeUuid/vote', requireUser, async (
   const body = await c.req.json().catch(() => ({} as any));
   const vote = (body.vote as 'sustain'|'overrule') || null;
   if (vote !== 'sustain' && vote !== 'overrule') return c.json({ error: 'invalid vote' }, 400);
+  
+  // Record the vote
   await db.insert(disputeVotes).values({ disputeUuid, userEmail: u.email.toLowerCase(), vote }).onConflictDoUpdate({ target: [disputeVotes.disputeUuid, disputeVotes.userEmail], set: { vote } });
+  
+  // Check if dispute should be automatically resolved
+  try {
+    const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, disputeUuid));
+    if (!dispute || dispute.status !== 'pending') {
+      return c.body(null, 204); // Already resolved or doesn't exist
+    }
+    
+    const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute.choreId));
+    if (!chore) return c.body(null, 204);
+    
+    // Calculate voting status
+    const [{ cnt: totalEligibleVoters }] = await db.select({ cnt: count() }).from(userHomes).where(eq(userHomes.homeId, chore.homeId));
+    const votes = await db.select().from(disputeVotes).where(eq(disputeVotes.disputeUuid, disputeUuid));
+    const sustainVotes = votes.filter(r => r.vote === 'sustain').length;
+    const overruleVotes = votes.filter(r => r.vote === 'overrule').length;
+    const requiredVotes = Number(totalEligibleVoters) <= 1 ? 1 : Math.max(1, Math.ceil(Number(totalEligibleVoters) * 0.5));
+    
+    // Automatically resolve if threshold is reached
+    if (sustainVotes >= requiredVotes) {
+      // Sustain the dispute
+      await db.update(disputes).set({ status: 'sustained', updatedAt: new Date() as any }).where(eq(disputes.uuid, disputeUuid));
+      
+      // If chore is completed, revert it back to claimed and deduct points
+      if (chore.status === 'complete' && chore.userEmail) {
+        try {
+          // Revert chore status back to claimed
+          await db
+            .update(chores)
+            .set({ status: 'claimed', completedAt: null, updatedAt: new Date() as any })
+            .where(eq(chores.uuid, dispute.choreId));
+          
+          // Deduct points from the user
+          const pointsToDeduct = chore.points;
+          const [userHome] = await db
+            .select()
+            .from(userHomes)
+            .where(and(eq(userHomes.homeId, chore.homeId), eq(userHomes.userEmail, chore.userEmail)))
+            .limit(1);
+          
+          if (userHome) {
+            await db
+              .update(userHomes)
+              .set({ points: Math.max(0, userHome.points - pointsToDeduct) })
+              .where(and(eq(userHomes.homeId, chore.homeId), eq(userHomes.userEmail, chore.userEmail)));
+          }
+        } catch (e) {
+          console.error('[auto dispute sustain] failed to revert chore or deduct points:', e);
+        }
+      }
+    } else if (overruleVotes >= requiredVotes) {
+      // Overrule the dispute
+      await db.update(disputes).set({ status: 'overruled', updatedAt: new Date() as any }).where(eq(disputes.uuid, disputeUuid));
+    }
+  } catch (e) {
+    console.error('[auto dispute resolution] failed:', e);
+  }
+  
   return c.body(null, 204);
 });
 

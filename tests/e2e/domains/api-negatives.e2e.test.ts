@@ -1,30 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
+
+import { json, agent } from '../../helpers/hono-test-client';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
 import { createOrJoinUser } from '../helpers/users';
-
-const agent = request(app);
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    case 'PATCH': r = r.patch(url).send(body ?? {}); break;
-    case 'DELETE': r = r.delete(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try { return { status: res.status, json: JSON.parse(text) } as any; }
-  catch { return { status: res.status, json: text } as any; }
-}
-
 describe('API negatives E2E (auth + not-found + bad-input)', () => {
   const alice = 'neg.alice@e2e.local';
   const bob = 'neg.bob@e2e.local';
@@ -65,7 +45,7 @@ describe('API negatives E2E (auth + not-found + bad-input)', () => {
     const hdr = { Authorization: `Bearer ${tokenOut}` };
     assert.equal((await json('GET', `/points/${homeId}`, undefined, hdr)).status, 403);
     assert.equal((await json('GET', `/approvals/${choreUuid}`, undefined, hdr)).status, 403);
-    const claimOut = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...hdr, Connection: 'close' });
+    const claimOut = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...hdr });
     assert.ok([403, 409].includes(claimOut.status));
   });
 
@@ -90,5 +70,3 @@ describe('API negatives E2E (auth + not-found + bad-input)', () => {
     await cleanupTestData();
   });
 });
-
-

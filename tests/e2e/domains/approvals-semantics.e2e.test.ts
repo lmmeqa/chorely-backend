@@ -1,30 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
+
+import { json, agent } from '../../helpers/hono-test-client';
 import { buildFourPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
 import { createOrJoinUser } from '../helpers/users';
-
-const agent = request(app);
-
-async function json(method: string, url: string, body?: any, headers?: Record<string, string>) {
-  let r: any = agent;
-  const h = { Connection: 'close', ...(headers || {}) } as Record<string, string>;
-  switch (method.toUpperCase()) {
-    case 'GET': r = r.get(url); break;
-    case 'POST': r = r.post(url).send(body ?? {}); break;
-    case 'PATCH': r = r.patch(url).send(body ?? {}); break;
-    default: throw new Error(`unsupported method ${method}`);
-  }
-  r = r.set(h);
-  const res = await r;
-  const text = res.text ?? '';
-  try { return { status: res.status, json: JSON.parse(text) } as any; }
-  catch { return { status: res.status, json: text } as any; }
-}
-
 describe('Approvals semantics E2E', () => {
   const scenario = buildFourPersonHouse();
   const [alice, bob, diana, charlie] = scenario.users;
@@ -55,7 +36,7 @@ describe('Approvals semantics E2E', () => {
     // Single vote (Alice) insufficient in 4-person home
     const v1 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: alice.email }, tA);
     assert.ok([200, 409].includes(v1.status));
-    const claimTooEarly = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA, Connection: 'close' });
+    const claimTooEarly = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA });
     assert.ok([403, 409].includes(claimTooEarly.status));
 
     // Second vote (Bob) reaches threshold
@@ -69,15 +50,15 @@ describe('Approvals semantics E2E', () => {
     assert.equal(v3again.status, 409);
 
     // Now claim should be allowed; idempotent repeat returns 409
-    const claim1 = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA, Connection: 'close' });
+    const claim1 = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA });
     assert.equal(claim1.status, 204);
-    const claimAgain = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA, Connection: 'close' });
+    const claimAgain = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA });
     assert.ok([204, 409].includes(claimAgain.status));
 
     // Complete once; repeat complete returns 409
-    const complete1 = await agent.patch(`/chores/${choreUuid}/complete`).set({ ...tA, Connection: 'close' }).attach('image', Buffer.from([1,2,3]), { filename: 'p.jpg', contentType: 'image/jpeg' });
+    const complete1 = await agent.patch(`/chores/${choreUuid}/complete`).set({ ...tA }).attach('image', Buffer.from([1,2,3]), { filename: 'p.jpg', contentType: 'image/jpeg' });
     assert.equal(complete1.status, 204);
-    const completeAgain = await agent.patch(`/chores/${choreUuid}/complete`).set({ ...tA, Connection: 'close' }).attach('image', Buffer.from([1,2,3]), { filename: 'p2.jpg', contentType: 'image/jpeg' });
+    const completeAgain = await agent.patch(`/chores/${choreUuid}/complete`).set({ ...tA }).attach('image', Buffer.from([1,2,3]), { filename: 'p2.jpg', contentType: 'image/jpeg' });
     assert.ok([204, 409].includes(completeAgain.status));
 
     // Optional: unvote reduces votes below threshold, preventing new claims on new chore
@@ -87,5 +68,3 @@ describe('Approvals semantics E2E', () => {
     await cleanupTestData();
   });
 });
-
-

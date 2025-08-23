@@ -1,6 +1,7 @@
 name = "chorely-backend"
 main = "dist/worker.js"
 compatibility_date = "2025-08-22"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Non-secret env (override in dashboard if you like)

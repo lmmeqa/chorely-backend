@@ -17,7 +17,7 @@ const createDisputeSchema = z.object({
 // POST /disputes → 201
 disputesRoutes.post('/disputes', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
-  const u = c.get('user') as { email?: string };
+  const u = (c as any).get('user') as { email?: string } | null;
   if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
 
   const ct = (c.req.header('content-type') || '').toLowerCase();
@@ -75,7 +75,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
 // POST /disputes/:uuid/vote { vote: 'sustain'|'overrule' }
 disputesRoutes.post('/disputes/:uuid/vote', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
-  const u = c.get('user') as { email?: string };
+  const u = (c as any).get('user') as { email?: string } | null;
   if (!u?.email) return c.json({ error: 'auth email required' }, 400);
   const { uuid } = c.req.param();
   const { vote } = (await c.req.json().catch(() => ({}))) as { vote?: 'sustain' | 'overrule' };
@@ -108,7 +108,7 @@ async function withSignedDispute(row: any) {
 // GET /disputes?homeId=... → 200, 400 if missing
 disputesRoutes.get('/disputes', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
-  const u = c.get('user') as { email?: string };
+  const u = (c as any).get('user') as { email?: string } | null;
   const homeId = c.req.query('homeId');
   if (!homeId) return c.json({ error: 'homeId required' }, 400);
 

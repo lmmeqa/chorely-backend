@@ -28,7 +28,7 @@ export class DisputeTimeoutService {
 
           // Get eligible voters (excluding the person who claimed the chore)
           const homeUsers = await db("user_homes").where({ home_id: chore.home_id });
-          const eligibleVoters = homeUsers.filter(user => user.user_email !== chore.user_email);
+          const eligibleVoters = homeUsers.filter((user: any) => user.user_email !== chore.user_email);
           const totalEligibleVoters = eligibleVoters.length;
           const requiredVotes = Math.ceil(totalEligibleVoters * 0.5);
 
@@ -36,7 +36,7 @@ export class DisputeTimeoutService {
           const votes = await db("dispute_votes")
             .where({ dispute_uuid: dispute.uuid });
           
-          const sustainVotes = votes.filter(v => v.vote === "sustain").length;
+          const sustainVotes = votes.filter((v: any) => v.vote === "sustain").length;
           
           // After 24 hours, auto-overrule regardless of vote count
           await db("disputes")

@@ -9,7 +9,7 @@ export const usersRoutes = new Hono();
 
 usersRoutes.get("/me", requireUser, async (c) => {
 	const db = dbFromEnv(c.env as any);
-	const u = c.get("user") as { id: string; email?: string; claims?: any };
+	const u = (c as any).get("user") as { id: string; email?: string; claims?: any } | null;
 	if (!u?.email) return c.json({ error: "Missing email in token" }, 400);
 
 	const meta = (u.claims?.user_metadata ?? {}) as Record<string, any>;
@@ -52,7 +52,7 @@ usersRoutes.get("/me", requireUser, async (c) => {
 // Legacy Express-compatible auth endpoints used by tests
 usersRoutes.post("/auth/authenticate", requireUser, async (c) => {
 	const db = dbFromEnv(c.env as any);
-	const u = c.get("user") as { id: string; email?: string; claims?: any };
+	const u = (c as any).get("user") as { id: string; email?: string; claims?: any } | null;
 	if (!u?.email) return c.json({ error: "Missing email in token" }, 400);
 
 	const meta = (u.claims?.user_metadata ?? {}) as Record<string, any>;
@@ -92,7 +92,7 @@ usersRoutes.post("/auth/authenticate", requireUser, async (c) => {
 });
 
 usersRoutes.get("/auth/me", requireUser, async (c) => {
-	const u = c.get("user") as { id: string; email?: string };
+	const u = (c as any).get("user") as { id: string; email?: string } | null;
 	if (!u?.email) return c.json({ error: "Missing email in token" }, 400);
 	return c.json({ email: u.email.toLowerCase() });
 });

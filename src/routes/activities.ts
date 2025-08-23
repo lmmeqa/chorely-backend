@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { dbFromEnv } from "../lib/db";
+import { dbFromEnv } from "../lib/db.worker";
 import { requireUser } from "../lib/auth";
 import { chores } from "../db/schema";
 import { and, desc, eq } from "drizzle-orm";

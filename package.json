@@ -12,7 +12,7 @@
     "fetch-seed-images": "ts-node scripts/fetch_seed_images.ts",
     "dev": "tsx src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
     "test": "vitest run --config vitest.config.mts --reporter=verbose",
     "test:ui": "vitest --config vitest.config.mts --ui",
     "test:coverage": "vitest run --config vitest.config.mts --coverage",
@@ -26,6 +26,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.0",
     "@neondatabase/serverless": "^0.10.4",
     "@supabase/supabase-js": "^2.55.0",
     "dotenv": "^17.2.1",
@@ -37,6 +38,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.5",
     "@types/supertest": "^6.0.3",
@@ -44,6 +46,7 @@
     "@vitest/coverage-v8": "^4.0.0-beta.8",
     "drizzle-kit": "^0.31.4",
     "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.3",
     "supertest": "^7.1.4",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.4",

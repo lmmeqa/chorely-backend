@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { dbFromEnv } from "../lib/db";
+import { dbFromEnv } from "../lib/db.worker";
 import { homes, userHomes, users } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 

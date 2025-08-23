@@ -23,7 +23,9 @@ const addLocalStatic = (app: any) => {
       try {
         const buf = await fs.readFile(file);
         const ct = file.endsWith('.jpg') || file.endsWith('.jpeg') ? 'image/jpeg' : 'application/octet-stream';
-        return new Response(buf, { headers: { 'content-type': ct, 'cache-control': 'public, max-age=86400' } });
+        return new Response(new Uint8Array(buf).buffer, {
+          headers: { 'content-type': ct, 'cache-control': 'public, max-age=86400' },
+        });
       } catch {
         return c.text('Not Found', 404);
       }

@@ -1,12 +1,17 @@
-name = "chorely-api"
-main = "src/worker.ts"
-compatibility_date = "2025-08-21"
-compatibility_flags = ["nodejs_compat"]
-
-[placement]
-mode = "smart"
+name = "chorely-backend"
+main = "dist/worker.js"
+compatibility_date = "2025-08-22"
 
 [vars]
+# Non-secret env (override in dashboard if you like)
 SUPABASE_URL = "https://nliyvlqddszmrsnybwrw.supabase.co"
+SUPABASE_BUCKET = "uploads"
+SUPABASE_SIGNED_URL_TTL = "3600"
 
+# Set secrets via: npx wrangler secret put DATABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# DATABASE_URL should be your Neon branch URL with sslmode=require
 
+# Optional: if you want a custom domain later
+# routes = [
+#   { pattern = "api.yourdomain.com/*", zone_name = "yourdomain.com" }
+# ]

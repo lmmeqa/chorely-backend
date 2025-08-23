@@ -1,7 +1,7 @@
 // src/routes/chores.ts
 import { Hono } from "hono";
 import { z } from "zod";
-import { dbFromEnv } from "../lib/db";
+import { dbFromEnv } from "../lib/db.worker";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByParam, requireHomeMemberByChoreUuid } from "../lib/authorization";
 import { chores, todoItems, userHomes } from "../db/schema";

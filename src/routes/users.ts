@@ -30,7 +30,8 @@ usersRoutes.get("/me", requireUser, async (c) => {
 		updatedAt: new Date(),
 	};
 
-	const [profile] = await db
+	// Split operation to avoid RETURNING timeout issues
+	await db
 		.insert(users)
 		.values(values)
 		.onConflictDoUpdate({
@@ -44,8 +45,14 @@ usersRoutes.get("/me", requireUser, async (c) => {
 				lastLogin: values.lastLogin,
 				updatedAt: values.updatedAt,
 			},
-		})
-		.returning();
+		});
+
+	// Get the updated profile in a separate query
+	const [profile] = await db
+		.select()
+		.from(users)
+		.where(eq(users.email, u.email))
+		.limit(1);
 
 	return c.json({ user: { id: u.id, email: u.email }, profile });
 });
@@ -100,48 +107,68 @@ usersRoutes.get("/auth/me", requireUser, async (c) => {
 
 // Legacy Express-compatible user creation and join endpoints used by tests
 usersRoutes.post("/user", async (c) => {
-    const db = dbFromEnv(c.env as any);
-    const Body = z.object({
-        email: z.string().email(),
-        name: z.string().min(1).optional(),
-        homeIds: z.array(z.string().uuid()).optional(),
-    });
-    const body = Body.safeParse(await c.req.json().catch(() => ({})));
-    if (!body.success) return c.json({ error: "INVALID_BODY" }, 400);
-    const email = body.data.email.toLowerCase();
-    const name = (body.data.name ?? email.split("@")[0]);
-    const homeIds = body.data.homeIds ?? [];
-
-    // Optional: ensure provided homes exist
-    if (homeIds.length > 0) {
-        const { homes } = await import("../db/schema");
-        const { inArray } = await import("drizzle-orm");
-        const existing = await db.select({ id: homes.id }).from(homes).where(inArray(homes.id, homeIds));
-        if (existing.length !== homeIds.length) {
-            return c.json({ error: "HOME_NOT_FOUND" }, 404);
-        }
-    }
-
-    // idempotent create - use Drizzle ORM with proper conflict handling
-    const { users } = await import("../db/schema");
+    const started = Date.now();
     try {
+        const Body = z.object({
+            email: z.string().email(),
+            name: z.string().min(1).optional(),
+            homeIds: z.array(z.string().uuid()).optional(),
+        });
+        const body = Body.safeParse(await c.req.json().catch(() => ({})));
+        if (!body.success) return c.json({ error: "INVALID_BODY" }, 400);
+        
+        const email = body.data.email.toLowerCase();
+        const name = (body.data.name ?? email.split("@")[0]);
+        const homeIds = body.data.homeIds ?? [];
+
+        const db = dbFromEnv(c.env as any);
+        const { users } = await import("../db/schema");
+        const { eq, inArray } = await import("drizzle-orm");
+
+        // Use the SAME UPSERT style as /auth/authenticate
+        // and always set updated fields so it's idempotent.
+        const now = new Date();
         await db.insert(users).values({
             email,
-            name,
-            lastLogin: new Date(),
-        }).onConflictDoNothing();
-    } catch (e: any) {
-        // Check if it's a conflict error (user already exists)
-        if (e.message?.includes('duplicate key') || e.message?.includes('already exists')) {
-            return c.json({ error: "exists" }, 409);
-        }
-        throw e;
-    }
+            name: name || 'user',
+            supabaseUserId: null,
+            authUserId: null,
+            avatarUrl: null,
+            lastProvider: 'email',
+            lastLogin: now,
+        })
+        .onConflictDoUpdate({
+            target: users.email,
+            set: {
+                name: name || 'user',
+                lastProvider: 'email',
+                lastLogin: now,
+                updatedAt: now,
+            },
+        });
 
-    for (const homeId of homeIds) {
-        await db.insert((await import("../db/schema")).userHomes).values({ userEmail: email, homeId, points: 0 }).onConflictDoNothing();
+        // Optional: ensure provided homes exist and add user to them
+        if (homeIds.length > 0) {
+            const { homes, userHomes } = await import("../db/schema");
+            const existing = await db.select({ id: homes.id }).from(homes).where(inArray(homes.id, homeIds));
+            if (existing.length !== homeIds.length) {
+                return c.json({ error: "HOME_NOT_FOUND" }, 404);
+            }
+
+            // Add user to homes (non-blocking, don't await)
+            for (const homeId of homeIds) {
+                db.insert(userHomes).values({ userEmail: email, homeId, points: 0 }).onConflictDoNothing().catch(e => {
+                    console.error(`Error adding user to home ${homeId}:`, e);
+                });
+            }
+        }
+
+        return c.json({ email, ms: Date.now() - started }, 201);
+    } catch (err: any) {
+        // Always respond; never let the Worker wait forever.
+        console.error("Error in /user endpoint:", err);
+        return c.json({ error: 'failed', message: String(err?.message || err) }, 500);
     }
-    return c.json({ email }, 201);
 });
 
 usersRoutes.post("/user/join", async (c) => {

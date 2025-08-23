@@ -1,7 +1,11 @@
+# wrangler.toml (wrangler v3.88.0^)
 name = "chorely-backend"
 main = "dist/worker.js"
 compatibility_date = "2025-08-22"
 compatibility_flags = ["nodejs_compat"]
+
+[observability.logs]
+enabled = true
 
 # Production environment (default)
 [vars]
@@ -22,6 +26,7 @@ name = "chorely-backend-staging"
 SUPABASE_URL = "https://nliyvlqddszmrsnybwrw.supabase.co"
 SUPABASE_BUCKET = "uploads-staging"
 SUPABASE_SIGNED_URL_TTL = "3600"
+STRICT_AUTH = "true"
 
 # Set staging secrets via:
 # npx wrangler secret put DATABASE_URL --env staging

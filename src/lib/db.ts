@@ -29,10 +29,13 @@ function maskDbUrl(u: string) {
 }
 
 export function dbFromEnv(env: Bindings) {
-  const isNodeEnv = typeof (globalThis as any).process?.versions?.node === 'string';
+  // More reliable environment detection
+  const isWorkers = typeof (globalThis as any).WebSocketPair !== 'undefined' || 
+                   typeof (globalThis as any).__CLOUDFLARE_WORKER__ !== 'undefined' ||
+                   typeof (globalThis as any).process?.versions?.node === 'undefined';
 
   // ✅ Node (local/dev/tests): use DATABASE_URL directly (matches .env)
-  if (isNodeEnv) {
+  if (!isWorkers) {
     if (!env.DATABASE_URL) {
       throw new Error('DATABASE_URL is required in local/dev Node environment');
     }

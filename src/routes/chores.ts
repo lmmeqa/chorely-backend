@@ -253,7 +253,7 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, async (c) => {
       
       if (imageBuffer.length > 0) {
         console.log(`[chore complete] Processing base64 image upload: ${filename}, size: ${imageBuffer.length}`);
-        uploadedPath = await uploadToStorageReturnPath(imageBuffer.buffer.slice(imageBuffer.byteOffset, imageBuffer.byteOffset + imageBuffer.byteLength), {
+        uploadedPath = await uploadToStorageReturnPath(imageBuffer.buffer, {
           prefix: `proofs/chores/${uuid}`,
           filename: filename,
           contentType: imageContentType,

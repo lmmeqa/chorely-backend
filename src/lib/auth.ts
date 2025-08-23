@@ -26,6 +26,7 @@ export async function requireUser(c: Context, next: Next) {
   const token = hdr.slice("Bearer ".length);
 
   const env: any = c.env ?? {};
+  // Support both local dev (process.env) and Workers (c.env)
   const strict = bool(process.env.STRICT_AUTH ?? env.STRICT_AUTH);
   const supabaseUrl = (process.env.SUPABASE_URL ?? env.SUPABASE_URL) as string | undefined;
   const supabaseJwtSecret = (process.env.SUPABASE_JWT_SECRET ?? env.SUPABASE_JWT_SECRET) as string | undefined;
@@ -53,7 +54,7 @@ export async function requireUser(c: Context, next: Next) {
     c.set("user", user);
     return next();
   } catch (err: any) {
-    if ((process as any).env?.VITEST_SHOW_LOGS === "true") {
+    if ((process.env?.VITEST_SHOW_LOGS === "true") || (env.VITEST_SHOW_LOGS === "true")) {
       // eslint-disable-next-line no-console
       console.error("[auth] jwtVerify failed:", err?.message ?? err);
     }

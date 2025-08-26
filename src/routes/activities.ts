@@ -22,6 +22,7 @@ async function withSignedPhoto(row: any, env?: any) {
       return { ...row, photoUrl: null };
     }
   }
+  // For local seed paths (starting with /seed/), pass through unchanged
   return row;
 }
 

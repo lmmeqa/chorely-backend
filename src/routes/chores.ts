@@ -57,11 +57,11 @@ choresRoutes.post("/chores", requireUser, async (c) => {
 });
 
 // Helper to sign a chore's photo on the fly
-async function withSignedPhoto(row: any) {
+async function withSignedPhoto(row: any, env?: any) {
   if (row?.photoUrl && isStoragePath(row.photoUrl)) {
     console.log(`[withSignedPhoto] Processing photoUrl: ${row.photoUrl}`);
     try {
-      const url = await createSignedUrlForPath(row.photoUrl);
+      const url = await createSignedUrlForPath(row.photoUrl, { env });
       console.log(`[withSignedPhoto] Generated signed URL: ${url}`);
       return { ...row, photoUrl: url };
     } catch (e) {
@@ -69,6 +69,7 @@ async function withSignedPhoto(row: any) {
       return row; // fall back to raw path if signing fails
     }
   }
+  // For local seed paths (starting with /seed/), pass through unchanged
   return row;
 }
 
@@ -84,7 +85,7 @@ choresRoutes.get("/chores/unapproved/:homeId", requireUser, requireHomeMemberByP
     .from(chores)
     .where(and(eq(chores.homeId, homeId), eq(chores.status, "unapproved")))
     .orderBy(desc(chores.createdAt));
-  const signed = await Promise.all(rows.map(withSignedPhoto));
+  const signed = await Promise.all(rows.map(row => withSignedPhoto(row, c.env)));
   return c.json(signed);
 });
 
@@ -100,12 +101,12 @@ choresRoutes.get("/chores/available/:homeId", requireUser, requireHomeMemberByPa
     .from(chores)
     .where(and(eq(chores.homeId, homeId), eq(chores.status, "unclaimed")))
     .orderBy(desc(chores.createdAt));
-  const signed = await Promise.all(rows.map(withSignedPhoto));
+  const signed = await Promise.all(rows.map(row => withSignedPhoto(row, c.env)));
   return c.json(signed);
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-// GET /chores/user?homeId=... → 200 (returns user's claimed chores in that home)
+// GET /chores/user?homeId=... → 200 (returns user's claimed chores in that home, not completed)
 // ──────────────────────────────────────────────────────────────────────────────
 choresRoutes.get("/chores/user", requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
@@ -117,9 +118,9 @@ choresRoutes.get("/chores/user", requireUser, async (c) => {
   const rows = await db
     .select()
     .from(chores)
-    .where(and(eq(chores.homeId, homeId), eq(chores.userEmail, u.email)))
+    .where(and(eq(chores.homeId, homeId), eq(chores.userEmail, u.email), eq(chores.status, "claimed")))
     .orderBy(desc(chores.updatedAt));
-  const signed = await Promise.all(rows.map(withSignedPhoto));
+  const signed = await Promise.all(rows.map(row => withSignedPhoto(row, c.env)));
   return c.json(signed);
 });
 
@@ -131,7 +132,7 @@ choresRoutes.get("/chores/:uuid", requireUser, async (c) => {
   const { uuid } = c.req.param();
   const [row] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
   if (!row) return c.json({ error: "not found" }, 404);
-  const signed = await withSignedPhoto(row);
+  const signed = await withSignedPhoto(row, c.env);
   return c.json(signed);
 });
 

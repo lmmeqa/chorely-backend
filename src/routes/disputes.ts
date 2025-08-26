@@ -198,15 +198,16 @@ disputesRoutes.post('/disputes/:uuid/vote', requireUser, async (c) => {
 });
 
 // Helper to sign a dispute row on the fly
-async function withSignedDispute(row: any) {
+async function withSignedDispute(row: any, env?: any) {
   if (row?.imageUrl && isStoragePath(row.imageUrl)) {
     try {
-      const url = await createSignedUrlForPath(row.imageUrl);
+      const url = await createSignedUrlForPath(row.imageUrl, { env });
       return { ...row, imageUrl: url };
     } catch {
       return row;
     }
   }
+  // For local seed paths (starting with /seed/), pass through unchanged
   return row;
 }
 
@@ -256,7 +257,7 @@ disputesRoutes.get('/disputes', requireUser, async (c) => {
     .where(whereConditions.length === 1 ? whereConditions[0] : and(...whereConditions))
     .orderBy(desc(disputes.createdAt));
 
-  const signed = await Promise.all(rows.map(withSignedDispute));
+  const signed = await Promise.all(rows.map(row => withSignedDispute(row, c.env)));
   return c.json(signed);
 });
 
@@ -266,7 +267,7 @@ disputesRoutes.get('/disputes/:uuid', requireUser, async (c) => {
   const { uuid } = c.req.param();
   const [row] = await db.select().from(disputes).where(eq(disputes.uuid, uuid)).limit(1);
   if (!row) return c.json({ error: 'not found' }, 404);
-  const signed = await withSignedDispute(row);
+  const signed = await withSignedDispute(row, c.env);
   return c.json(signed);
 });
 

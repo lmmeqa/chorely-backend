@@ -31,7 +31,14 @@ async function main() {
   const minutesFromNow = (mins: number) => new Date(Date.now() + mins * 60_000);
   const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60_000);
   const daysAgo = (d: number) => new Date(Date.now() - d * 24 * 60 * 60_000);
-  const img = (slug: string) => `/seed/${slug}.jpg`;
+  
+  // Environment-aware image path helper
+  const img = (slug: string) => {
+    // Local development: use /seed/ paths (served by static middleware)
+    if (env === 'local') return `/seed/${slug}.jpg`;
+    // Staging/Production: use seed/ paths (served from Supabase Storage)
+    return `seed/${slug}.jpg`;
+  };
 
   // Clean up existing data
   try { await db.execute('DELETE FROM dispute_votes'); } catch {}
@@ -221,6 +228,7 @@ async function main() {
     disputerEmail: alice.email,
     reason: 'Floor is still dirty and sticky in corners',
     status: 'pending',
+    imageUrl: img('mopping-kitchen-floor'), // Add dispute image
   }).returning();
 
   const [d2] = await db.insert(disputes).values({
@@ -228,6 +236,7 @@ async function main() {
     disputerEmail: charlie.email,
     reason: 'Toilet seat was not cleaned properly',
     status: 'pending',
+    imageUrl: img('clean-bathroom-sink-shower'), // Add dispute image
   }).returning();
 
   // Create dispute votes

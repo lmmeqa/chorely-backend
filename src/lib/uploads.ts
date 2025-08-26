@@ -64,8 +64,10 @@ export async function createSignedUrlForPath(
 /** Helper: determine if a stored string looks like a Storage path. */
 export function isStoragePath(value: string | null | undefined): value is string {
   if (!value) return false;
-  // Exclude URLs and seed paths
+  // Exclude URLs and local seed paths (for development)
   if (/^https?:\/\//i.test(value)) return false; // URLs
-  if (value.startsWith('/seed/')) return false; // Seed placeholder paths
+  if (value.startsWith('/seed/')) return false; // Local dev seed paths
+  // Include seed paths in storage (for staging/production)
+  if (value.startsWith('seed/')) return true; // Storage seed paths
   return true; // Everything else is a storage path
 }

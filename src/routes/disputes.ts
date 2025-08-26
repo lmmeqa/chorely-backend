@@ -102,6 +102,16 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
     .limit(1);
   if (!m) return c.json({ error: 'Forbidden: not a member of this home' }, 403);
 
+  // Check if there's already an active dispute for this chore
+  const [existingDispute] = await db
+    .select({ uuid: disputes.uuid })
+    .from(disputes)
+    .where(and(eq(disputes.choreId, payload.choreId), eq(disputes.status, 'pending')))
+    .limit(1);
+  if (existingDispute) {
+    return c.json({ error: 'A dispute already exists for this chore' }, 409);
+  }
+
   const [row] = await db
     .insert(disputes)
     .values({

@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { dbFromEnv } from "../lib/db";
+import { requireUser } from "../lib/auth";
+import { requireHomeMemberByParam } from "../lib/authorization";
 import { homes, userHomes, users } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -67,6 +69,105 @@ homesRoutes.patch("/homes/:id/quota", async (c) => {
 	const [updated] = await db.update(homes).set({ weeklyPointQuota: quota }).where(eq(homes.id, id)).returning();
 	if (!updated) return c.json({ error: "not found" }, 404);
 	return c.json({ weeklyPointQuota: updated.weeklyPointQuota });
+});
+
+// GET /home/:id/summary?user=:email - Batch endpoint for all home data
+homesRoutes.get("/home/:id/summary", requireUser, async (c) => {
+	try {
+		const { chores, userHomes } = await import("../db/schema");
+		const { desc } = await import("drizzle-orm");
+		const { uploadToStorageReturnPath, createSignedUrlForPath, isStoragePath } = await import("../lib/uploads");
+		
+		const db = dbFromEnv(c.env as any);
+		const { id: homeId } = c.req.param();
+		const userEmail = c.req.query("user");
+		
+		if (!userEmail) {
+			return c.json({ error: "user query parameter required" }, 400);
+		}
+		
+		// Validate UUID format
+		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+		if (!uuidRegex.test(homeId)) {
+			return c.json({ error: "Invalid home ID format" }, 400);
+		}
+		
+		// Check if home exists and user has access
+		const [home] = await db.select().from(homes).where(eq(homes.id, homeId));
+		if (!home) {
+			return c.json({ error: "Home not found" }, 404);
+		}
+		
+		// Check if user is member of this home
+		const u = (c as any).get("user") as { email?: string };
+		const [membership] = await db.select().from(userHomes).where(and(eq(userHomes.homeId, homeId), eq(userHomes.userEmail, u?.email || '')));
+		if (!membership) {
+			return c.json({ error: "Access denied to this home" }, 403);
+		}
+	
+	// Helper function to add signed photo URLs
+	const withSignedPhoto = async (row: any, env: any) => {
+		if (!row.photoUrl || !isStoragePath(row.photoUrl)) {
+			return row;
+		}
+		try {
+			const signed = await createSignedUrlForPath(row.photoUrl, env);
+			return { ...row, photo_url: signed };
+		} catch (error) {
+			console.warn('Failed to create signed URL for photo:', error);
+			return row;
+		}
+	};
+	
+	// Batch fetch all data in parallel
+	const [availableChores, myChores, unapprovedChores, allUserPoints] = await Promise.all([
+		// Available chores (unclaimed)
+		db.select().from(chores)
+			.where(and(eq(chores.homeId, homeId), eq(chores.status, "unclaimed")))
+			.orderBy(desc(chores.createdAt)),
+		
+		// My chores (claimed by user)
+		db.select().from(chores)
+			.where(and(eq(chores.homeId, homeId), eq(chores.userEmail, userEmail), eq(chores.status, "claimed")))
+			.orderBy(desc(chores.createdAt)),
+		
+		// Unapproved chores (completed, waiting approval)
+		db.select().from(chores)
+			.where(and(eq(chores.homeId, homeId), eq(chores.status, "complete")))
+			.orderBy(desc(chores.createdAt)),
+		
+		// All user points in home
+		db.select().from(userHomes).where(eq(userHomes.homeId, homeId))
+	]);
+	
+	// Get current user's points
+	const currentUserPoints = allUserPoints.find(p => p.userEmail === userEmail)?.points ?? 0;
+	
+	// Transform points data to match expected format
+	const pointsMap = allUserPoints.reduce((acc, row) => {
+		acc[row.userEmail] = row.points;
+		return acc;
+	}, {} as Record<string, number>);
+	
+	// Process signed URLs for photos
+	const [signedAvailable, signedMy, signedUnapproved] = await Promise.all([
+		Promise.all(availableChores.map(row => withSignedPhoto(row, c.env))),
+		Promise.all(myChores.map(row => withSignedPhoto(row, c.env))),
+		Promise.all(unapprovedChores.map(row => withSignedPhoto(row, c.env)))
+	]);
+	
+	return c.json({
+		availableChores: signedAvailable,
+		myChores: signedMy, 
+		unapprovedChores: signedUnapproved,
+		userPoints: currentUserPoints,
+		allUserPoints: pointsMap
+	});
+	
+	} catch (error) {
+		console.error('[home-summary] Error:', error);
+		return c.json({ error: "Internal server error" }, 500);
+	}
 });
 
 

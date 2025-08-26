@@ -1,9 +1,10 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByChoreUuid } from "../lib/authorization";
 import { choreApprovals, chores, userHomes } from "../db/schema";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 export const approvalsRoutes = new Hono();
 
@@ -92,6 +93,91 @@ approvalsRoutes.post("/approvals/:uuid/unvote", requireUser, requireHomeMemberBy
     await db.update(chores).set({ status: "unapproved", updatedAt: new Date() }).where(eq(chores.uuid, uuid));
   }
   return c.json({ approved: voters.length >= required, votes: voters.length, required, voters: voters.map(v => v.userEmail) });
+});
+
+// POST /approvals/batch { uuids: string[] } - Batch endpoint for approval statuses
+approvalsRoutes.post("/approvals/batch", requireUser, async (c) => {
+  const db = dbFromEnv(c.env as any);
+  const body = await c.req.json().catch(() => ({}));
+  
+  const requestSchema = z.object({
+    uuids: z.array(z.string().uuid())
+  });
+  
+  let uuids: string[];
+  try {
+    ({ uuids } = requestSchema.parse(body));
+  } catch (error) {
+    return c.json({ error: "Invalid request body. Expected { uuids: string[] }" }, 400);
+  }
+  
+  if (uuids.length === 0) {
+    return c.json([]);
+  }
+  
+  // Fetch all chores in batch - filter valid UUIDs only
+  let choreList;
+  try {
+    choreList = await db.select().from(chores).where(inArray(chores.uuid, uuids));
+  } catch (error) {
+    // Handle case where some UUIDs are invalid
+    choreList = [];
+  }
+  
+  if (choreList.length === 0) {
+    return c.json([]);
+  }
+  
+  // Group chores by home to get user counts efficiently
+  const homeIds = [...new Set(choreList.map(c => c.homeId))];
+  const homeCounts = await Promise.all(
+    homeIds.map(async (homeId) => {
+      const [{ cnt }] = await db
+        .select({ cnt: count() })
+        .from(userHomes)
+        .where(eq(userHomes.homeId, homeId));
+      return { homeId, count: Number(cnt) };
+    })
+  );
+  
+  const homeCountMap = homeCounts.reduce((acc, { homeId, count }) => {
+    acc[homeId] = count;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // Fetch all voters for all chores in batch
+  const allVoters = await db
+    .select({ 
+      choreUuid: choreApprovals.choreUuid, 
+      userEmail: choreApprovals.userEmail 
+    })
+    .from(choreApprovals)
+    .where(inArray(choreApprovals.choreUuid, uuids));
+  
+  // Group voters by chore UUID
+  const votersByChore = allVoters.reduce((acc, { choreUuid, userEmail }) => {
+    if (!acc[choreUuid]) acc[choreUuid] = [];
+    acc[choreUuid].push(userEmail);
+    return acc;
+  }, {} as Record<string, string[]>);
+  
+  // Build response for each chore
+  const results = choreList.map(chore => {
+    const voters = votersByChore[chore.uuid] || [];
+    const totalUsers = homeCountMap[chore.homeId] || 0;
+    const required = calcRequired(totalUsers);
+    
+    return {
+      uuid: chore.uuid,
+      status: chore.status,
+      voters,
+      votes: voters.length,
+      required,
+      total_users: totalUsers,
+    };
+  });
+  
+  return c.json(results);
 });
 
 

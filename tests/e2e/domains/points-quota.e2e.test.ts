@@ -6,6 +6,7 @@ import { buildTwoPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
 import { createOrJoinUser } from '../helpers/users';
+import { expectApprovalVotePayload } from '../helpers/assertions';
 describe('Points & quota E2E', () => {
   const scenario = buildTwoPersonHouse();
   const [alice, bob] = scenario.users;
@@ -28,7 +29,7 @@ describe('Points & quota E2E', () => {
 
     // Set small weekly quota: 10
     const pq = await json('PATCH', `/homes/${homeId}/quota`, { weeklyPointQuota: 10 });
-    assert.ok([200, 204].includes(pq.status));
+    assert.equal(pq.status, 200);
 
     // Create two chores of 6 points
     const c1 = await json('POST', '/chores', { name: 'P6-A', description: 'quota', time: '2033-01-01T00:00:00', icon: 'wind', home_id: homeId, points: 6 }, { Authorization: `Bearer ${tokenA}` });
@@ -37,10 +38,21 @@ describe('Points & quota E2E', () => {
     assert.equal(c2.status, 201);
 
     // Approvals: vote by both members to ensure threshold
-    assert.ok([200, 409].includes((await json('POST', `/approvals/${c1.json.uuid}/vote`, { userEmail: alice.email }, { Authorization: `Bearer ${tokenA}` })).status));
-    assert.ok([200, 409].includes((await json('POST', `/approvals/${c1.json.uuid}/vote`, { userEmail: bob.email }, { Authorization: `Bearer ${tokenB}` })).status));
-    assert.ok([200, 409].includes((await json('POST', `/approvals/${c2.json.uuid}/vote`, { userEmail: alice.email }, { Authorization: `Bearer ${tokenA}` })).status));
-    assert.ok([200, 409].includes((await json('POST', `/approvals/${c2.json.uuid}/vote`, { userEmail: bob.email }, { Authorization: `Bearer ${tokenB}` })).status));
+    const vote1a = await json('POST', `/approvals/${c1.json.uuid}/vote`, { userEmail: alice.email }, { Authorization: `Bearer ${tokenA}` });
+    assert.equal(vote1a.status, 200);
+    expectApprovalVotePayload(vote1a.json);
+    
+    const vote1b = await json('POST', `/approvals/${c1.json.uuid}/vote`, { userEmail: bob.email }, { Authorization: `Bearer ${tokenB}` });
+    assert.equal(vote1b.status, 200);
+    expectApprovalVotePayload(vote1b.json);
+    
+    const vote2a = await json('POST', `/approvals/${c2.json.uuid}/vote`, { userEmail: alice.email }, { Authorization: `Bearer ${tokenA}` });
+    assert.equal(vote2a.status, 200);
+    expectApprovalVotePayload(vote2a.json);
+    
+    const vote2b = await json('POST', `/approvals/${c2.json.uuid}/vote`, { userEmail: bob.email }, { Authorization: `Bearer ${tokenB}` });
+    assert.equal(vote2b.status, 200);
+    expectApprovalVotePayload(vote2b.json);
 
     // Claim and complete both by Alice
     assert.equal((await agent.patch(`/chores/${c1.json.uuid}/claim`).set({ Authorization: `Bearer ${tokenA}` })).status, 204);
@@ -52,8 +64,9 @@ describe('Points & quota E2E', () => {
     const r = await json('GET', `/points/${homeId}/${encodeURIComponent(alice.email)}`, undefined, { Authorization: `Bearer ${tokenA}` });
     assert.equal(r.status, 200);
     const pts = Number(r.json.points ?? r.json.total ?? r.json.totalPoints ?? 0);
-    // Accept either capped 10 or uncapped 12 to avoid overfitting; tighten later when policy is finalized
-    assert.ok([10, 12].includes(pts), `Expected points to be capped at 10 or uncapped 12, got ${pts}`);
+    // Assert full earned points (no cap yet) - following guide
+    const expectedMinimum = 12; // 6 + 6 points from both chores
+    assert.ok(pts >= expectedMinimum, `expected points >= ${expectedMinimum}, got ${pts}`);
   });
 
   afterAll(async () => {

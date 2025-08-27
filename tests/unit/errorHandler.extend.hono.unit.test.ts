@@ -22,7 +22,7 @@ function makeRequest(app: Hono, path: string) {
 }
 
 describe('errorHandler middleware (extended - Hono)', () => {
-  // NOTE: Hono does not reliably route non-Error throws to onError.
+  // TODO: Hono does not reliably route non-Error throws to onError.
   // Skipping this case to avoid false negatives; our errorHandler
   // is covered by real Error objects in other tests.
   it.skip('handles unknown error objects with 500', async () => {

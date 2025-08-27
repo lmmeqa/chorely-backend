@@ -23,7 +23,7 @@ describe('Batch Endpoints E2E', () => {
     token2 = await supabaseSignupOrLogin(user2, pw);
     
     // Create home and users
-    const home = await json('POST', '/homes', { name: scenario.homeName });
+    const home = await json('POST', '/homes', { name: scenario.homeName }, { Authorization: `Bearer ${token1}` });
     homeId = home.json.id;
     
     // Add users to home

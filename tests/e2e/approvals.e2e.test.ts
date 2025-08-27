@@ -23,7 +23,7 @@ describe('Approvals E2E', () => {
     token1 = await supabaseSignupOrLogin(user1, pw);
     token2 = await supabaseSignupOrLogin(user2, pw);
     // Create home and users
-    const h = await json('POST', '/homes', { name: scenario.homeName });
+    const h = await json('POST', '/homes', { name: scenario.homeName }, { Authorization: `Bearer ${token1}` });
     assert.equal(h.status, 201);
     homeId = h.json.id;
     const a = await json('POST', '/user', { email: user1, homeIds: [homeId], name: scenario.users[0].name });

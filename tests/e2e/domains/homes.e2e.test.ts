@@ -16,6 +16,7 @@ describe('Homes domain E2E', () => {
     await resetBackendForEmails(scenario.users.map(u => u.email));
     for (const u of scenario.users) tokens[u.email] = await supabaseSignupOrLogin(u.email, u.password);
     const h = await json('POST', '/homes', { name: scenario.homeName });
+    console.log('Home creation response:', h.status, h.json);
     assert.equal(h.status, 201); homeId = h.json.id;
     for (const u of scenario.users) {
       const r = await json('POST', '/user', { email: u.email, homeIds: [homeId], name: u.name });

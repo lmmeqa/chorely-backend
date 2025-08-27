@@ -26,7 +26,7 @@ describe('Chorely API E2E', () => {
   }, 30000);
 
   it('creates isolated home', async () => {
-    const r = await json('POST', '/homes', { name: scenario.homeName });
+    const r = await json('POST', '/homes', { name: scenario.homeName }, { Authorization: `Bearer ${token1}` });
     assert.equal(r.status, 201);
     assert.ok(r.json.id);
     homeId = r.json.id;

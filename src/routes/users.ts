@@ -221,4 +221,47 @@ usersRoutes.get("/user/:email/home", requireUser, requireSelfEmailByParam('email
     return c.json(rows);
 });
 
+// NEW: strict self profile fetch to match frontend getUserByEmailAPI
+usersRoutes.get("/user/:email", requireUser, requireSelfEmailByParam("email"), async (c) => {
+  const db = dbFromEnv(c.env as any);
+  const email = String(c.req.param("email")).toLowerCase();
+  const [row] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (!row) return c.json({ error: "Not found" }, 404);
+  return c.json({
+    email: row.email,
+    name: row.name,
+    avatarUrl: row.avatarUrl,
+    lastProvider: row.lastProvider,
+  });
+});
+
+// NEW: account deletion used by User Settings (cascades clean up via schema)
+usersRoutes.delete("/user/me", requireUser, async (c) => {
+  const db = dbFromEnv(c.env as any);
+  const u = (c as any).get("user") as { email?: string } | null;
+  if (!u?.email) return c.json({ error: "Unauthorized" }, 401);
+  await db.delete(users).where(eq(users.email, u.email));
+  return c.body(null, 204);
+});
+
+// NEW: leave home membership used by Home Switcher / settings
+usersRoutes.post("/user/leave", requireUser, async (c) => {
+  const db = dbFromEnv(c.env as any);
+  const u = (c as any).get("user") as { email?: string } | null;
+  const body = await c.req.json();
+  const email = String(body?.email || "").toLowerCase();
+  const homeId = String(body?.homeId || "");
+  if (!u?.email) return c.json({ error: "Unauthorized" }, 401);
+  if (!email || !homeId) return c.json({ error: "Missing email/homeId" }, 400);
+  if (u.email.toLowerCase() !== email) {
+    return c.json({ error: "Forbidden: can only leave for yourself" }, 403);
+  }
+  const { userHomes } = await import("../db/schema");
+  const { and, eq } = await import("drizzle-orm");
+  await db
+    .delete(userHomes)
+    .where(and(eq(userHomes.userEmail, email), eq(userHomes.homeId, homeId)));
+  return c.body(null, 204);
+});
+
 

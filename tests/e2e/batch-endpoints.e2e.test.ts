@@ -99,9 +99,10 @@ describe('Batch Endpoints E2E', () => {
       assert.ok(myChore);
       assert.equal(myChore.status, 'claimed');
       
-      const completedChore = data.unapprovedChores.find((c: any) => c.uuid === chore3Uuid);
-      assert.ok(completedChore);
-      assert.equal(completedChore.status, 'complete');
+      // Note: chore3 was completed, so it should NOT appear in unapprovedChores
+      // (only new chores waiting for initial approval should appear there)
+      const completedChoreInUnapproved = data.unapprovedChores.find((c: any) => c.uuid === chore3Uuid);
+      assert.ok(!completedChoreInUnapproved, 'Completed chores should not appear in unapproved list');
       
       // Verify points data includes both users
       assert.ok(data.allUserPoints[user1] !== undefined);
@@ -233,6 +234,66 @@ describe('Batch Endpoints E2E', () => {
       );
       
       assert.equal(response.status, 400);
+    });
+  });
+
+  describe('Unapproved Chore Vote Validation', () => {
+    it('should auto-approve chores with enough votes when fetching summary', async () => {
+      // Create a new unapproved chore
+      const createResponse = await json('POST', '/chores', {
+        name: 'Vote Validation Test',
+        description: 'Test auto-approval',
+        time: '2031-01-01T00:00:00Z',
+        icon: 'check',
+        home_id: homeId,
+        points: 3,
+      }, { Authorization: `Bearer ${token1}` });
+      
+      assert.equal(createResponse.status, 201);
+      const newChoreUuid = createResponse.json.uuid;
+      
+      // Verify chore starts as unapproved in summary
+      let summaryResponse = await json(
+        'GET', 
+        `/home/${homeId}/summary?user=${encodeURIComponent(user1)}`,
+        undefined,
+        { Authorization: `Bearer ${token1}` }
+      );
+      
+      assert.equal(summaryResponse.status, 200);
+      let newChoreInUnapproved = summaryResponse.json.unapprovedChores.find((c: any) => c.uuid === newChoreUuid);
+      assert.ok(newChoreInUnapproved, 'New chore should appear in unapproved list');
+      assert.equal(newChoreInUnapproved.status, 'unapproved');
+      
+      // Add votes from both users (which should be enough for 2 users: Math.ceil(2 * 0.5) = 1, but max(2, 1) = 2)
+      await json('POST', `/approvals/${newChoreUuid}/vote`, 
+        { userEmail: user1 }, 
+        { Authorization: `Bearer ${token1}` }
+      );
+      
+      await json('POST', `/approvals/${newChoreUuid}/vote`, 
+        { userEmail: user2 }, 
+        { Authorization: `Bearer ${token2}` }
+      );
+      
+      // Now fetch summary again - the chore should be auto-approved and moved out of unapproved list
+      summaryResponse = await json(
+        'GET', 
+        `/home/${homeId}/summary?user=${encodeURIComponent(user1)}`,
+        undefined,
+        { Authorization: `Bearer ${token1}` }
+      );
+      
+      assert.equal(summaryResponse.status, 200);
+      
+      // Chore should no longer be in unapproved list
+      const choreStillUnapproved = summaryResponse.json.unapprovedChores.find((c: any) => c.uuid === newChoreUuid);
+      assert.ok(!choreStillUnapproved, 'Chore with enough votes should be auto-approved and removed from unapproved list');
+      
+      // Chore should now appear in available chores (unclaimed)
+      const choreNowAvailable = summaryResponse.json.availableChores.find((c: any) => c.uuid === newChoreUuid);
+      assert.ok(choreNowAvailable, 'Auto-approved chore should appear in available chores');
+      assert.equal(choreNowAvailable.status, 'unclaimed');
     });
   });
 

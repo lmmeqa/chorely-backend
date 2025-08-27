@@ -73,6 +73,56 @@ describe('Approvals E2E', () => {
     assert.ok(st2.json.votes <= st1.json.votes);
   });
 
+  it('voting is only allowed on unapproved chores', async () => {
+    // Create a new chore for this specific test
+    const create = await json('POST', '/chores', {
+      name: 'Vote Restriction Test', 
+      description: 'Test vote restrictions by status', 
+      time: '2031-01-01T00:00:00', 
+      icon: 'lock', 
+      home_id: homeId, 
+      points: 5,
+    }, { Authorization: `Bearer ${token1}` });
+    assert.equal(create.status, 201);
+    const testChoreUuid = create.json.uuid;
+
+    // Verify chore starts as unapproved
+    const getInitialChore = await json('GET', `/chores/${testChoreUuid}`, undefined, { Authorization: `Bearer ${token1}` });
+    assert.equal(getInitialChore.status, 200);
+    assert.equal(getInitialChore.json.status, 'unapproved');
+
+    // Voting should work on unapproved chore
+    const voteOnUnapproved = await json('POST', `/approvals/${testChoreUuid}/vote`, { userEmail: user1 }, { Authorization: `Bearer ${token1}` });
+    assert.equal(voteOnUnapproved.status, 200);
+
+    // Approve the chore (from unapproved to unclaimed)
+    const approve = await json('PATCH', `/chores/${testChoreUuid}/approve`, {}, { Authorization: `Bearer ${token1}` });
+    assert.equal(approve.status, 204);
+
+    // Voting should be rejected on unclaimed chore
+    const voteOnUnclaimed = await json('POST', `/approvals/${testChoreUuid}/vote`, { userEmail: user2 }, { Authorization: `Bearer ${token2}` });
+    assert.equal(voteOnUnclaimed.status, 409, 'Should not allow voting on unclaimed chore');
+    assert.ok(voteOnUnclaimed.json.error.includes('unapproved'), 'Error should mention chore must be unapproved');
+
+    // Claim the chore
+    const claim = await json('PATCH', `/chores/${testChoreUuid}/claim`, {}, { Authorization: `Bearer ${token1}` });
+    assert.equal(claim.status, 204);
+
+    // Voting should be rejected on claimed chore
+    const voteOnClaimed = await json('POST', `/approvals/${testChoreUuid}/vote`, { userEmail: user2 }, { Authorization: `Bearer ${token2}` });
+    assert.equal(voteOnClaimed.status, 409, 'Should not allow voting on claimed chore');
+    assert.ok(voteOnClaimed.json.error.includes('unapproved'), 'Error should mention chore must be unapproved');
+
+    // Complete the chore
+    const complete = await json('PATCH', `/chores/${testChoreUuid}/complete`, {}, { Authorization: `Bearer ${token1}` });
+    assert.equal(complete.status, 204);
+
+    // Voting should be rejected on completed chore
+    const voteOnCompleted = await json('POST', `/approvals/${testChoreUuid}/vote`, { userEmail: user2 }, { Authorization: `Bearer ${token2}` });
+    assert.equal(voteOnCompleted.status, 409, 'Should not allow voting on completed chore');
+    assert.ok(voteOnCompleted.json.error.includes('unapproved'), 'Error should mention chore must be unapproved');
+  });
+
   afterAll(async () => {
     await cleanupTestData();
   });

@@ -3,8 +3,9 @@ import { z } from "zod";
 import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByParam } from "../lib/authorization";
-import { homes, userHomes, users } from "../db/schema";
-import { and, eq } from "drizzle-orm";
+import { homes, userHomes, users, chores, choreApprovals } from "../db/schema";
+import { and, eq, desc, count } from "drizzle-orm";
+import { createSignedUrlForPath, isStoragePath } from "../lib/uploads";
 
 export const homesRoutes = new Hono();
 
@@ -131,9 +132,9 @@ homesRoutes.get("/home/:id/summary", requireUser, async (c) => {
 			.where(and(eq(chores.homeId, homeId), eq(chores.userEmail, userEmail), eq(chores.status, "claimed")))
 			.orderBy(desc(chores.createdAt)),
 		
-		// Unapproved chores (completed, waiting approval)
+		// Unapproved chores (new chores waiting for initial approval)
 		db.select().from(chores)
-			.where(and(eq(chores.homeId, homeId), eq(chores.status, "complete")))
+			.where(and(eq(chores.homeId, homeId), eq(chores.status, "unapproved")))
 			.orderBy(desc(chores.createdAt)),
 		
 		// All user points in home
@@ -149,11 +150,39 @@ homesRoutes.get("/home/:id/summary", requireUser, async (c) => {
 		return acc;
 	}, {} as Record<string, number>);
 	
+	// Validate and update unapproved chores that may have enough votes to be approved
+	const updatedUnapprovedChores = [];
+	const totalUsersInHome = allUserPoints.length;
+	const requiredVotes = totalUsersInHome <= 1 ? 1 : Math.max(2, Math.ceil(totalUsersInHome * 0.5));
+	
+	for (const chore of unapprovedChores) {
+		// Check current vote count for this chore
+		const currentVotes = await db
+			.select({ count: count() })
+			.from(choreApprovals)
+			.where(eq(choreApprovals.choreUuid, chore.uuid));
+		
+		const voteCount = Number(currentVotes[0]?.count || 0);
+		
+		// If chore has enough votes, update status to unclaimed
+		if (voteCount >= requiredVotes) {
+			console.log(`[home summary] Auto-approving chore ${chore.uuid} with ${voteCount}/${requiredVotes} votes`);
+			await db.update(chores)
+				.set({ status: "unclaimed", updatedAt: new Date() })
+				.where(eq(chores.uuid, chore.uuid));
+			
+			// Don't include this chore in unapproved list anymore - it's now approved
+		} else {
+			// Keep this chore in the unapproved list
+			updatedUnapprovedChores.push(chore);
+		}
+	}
+	
 	// Process signed URLs for photos
 	const [signedAvailable, signedMy, signedUnapproved] = await Promise.all([
 		Promise.all(availableChores.map(row => withSignedPhoto(row, c.env))),
 		Promise.all(myChores.map(row => withSignedPhoto(row, c.env))),
-		Promise.all(unapprovedChores.map(row => withSignedPhoto(row, c.env)))
+		Promise.all(updatedUnapprovedChores.map(row => withSignedPhoto(row, c.env)))
 	]);
 	
 	return c.json({

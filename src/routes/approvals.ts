@@ -48,6 +48,15 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
   const email = (body.userEmail as string) || u?.email;
   if (!email) return c.json({ error: "email required" }, 400);
 
+  // Check if chore exists and is in correct state for voting
+  const [chore] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
+  if (!chore) return c.json({ error: "chore not found" }, 404);
+  
+  // Only allow voting on unapproved chores
+  if (chore.status !== "unapproved") {
+    return c.json({ error: "can only vote on unapproved chores" }, 409);
+  }
+
   // Check if vote already exists
   const existing = await db
     .select()
@@ -61,15 +70,11 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
 
   await db.insert(choreApprovals).values({ choreUuid: uuid, userEmail: email });
   
-  // Check if this vote pushes the chore to approved status
-  const [chore] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
-  if (!chore) return c.json({ error: "chore not found" }, 404);
-  
   const voters = await db.select().from(choreApprovals).where(eq(choreApprovals.choreUuid, uuid));
   const [{ cnt }] = await db.select({ cnt: count() }).from(userHomes).where(eq(userHomes.homeId, chore.homeId));
   const required = Number(cnt) <= 1 ? 1 : Math.max(2, Math.ceil(Number(cnt) * 0.5));
   
-  if (voters.length >= required && chore.status === "unapproved") {
+  if (voters.length >= required) {
     await db.update(chores).set({ status: "unclaimed", updatedAt: new Date() }).where(eq(chores.uuid, uuid));
   }
 
@@ -116,7 +121,7 @@ approvalsRoutes.post("/approvals/batch", requireUser, async (c) => {
   }
   
   // Fetch all chores in batch - filter valid UUIDs only
-  let choreList;
+  let choreList: any[] = [];
   try {
     choreList = await db.select().from(chores).where(inArray(chores.uuid, uuids));
   } catch (error) {

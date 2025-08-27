@@ -219,7 +219,6 @@ async function main() {
   // Create approvals for unapproved chore (c4)
   await db.insert(choreApprovals).values([
     { choreUuid: c4.uuid, userEmail: alice.email },
-    { choreUuid: c4.uuid, userEmail: bob.email },
   ]);
 
   // Create disputes

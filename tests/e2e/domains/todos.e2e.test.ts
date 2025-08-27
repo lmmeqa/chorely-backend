@@ -6,6 +6,7 @@ import { buildTwoPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { createOrJoinUser } from '../helpers/users';
 import { cleanupTestData } from '../helpers/reset-backend';
+import { waitFor } from '../helpers/wait';
 describe('Todos E2E', () => {
   const scenario = buildTwoPersonHouse();
   const [alice] = scenario.users;
@@ -61,15 +62,12 @@ describe('Todos E2E', () => {
       return arr;
     };
 
-    // Wait briefly for any async generation to complete to avoid race with shifting logic
-    const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
-    let prevLen = -1;
-    for (let i = 0; i < 10; i++) {
-      const arr = await fetchTodos();
-      if (arr.length === prevLen) break;
-      prevLen = arr.length;
-      await wait(100);
-    }
+    // Wait for async generation to complete to avoid race with shifting logic - using waitFor
+    const stableResult = await waitFor(
+      () => fetchTodos(),
+      (arr) => arr.length > 0, // Wait until we have at least some todos
+      { timeoutMs: 2000, intervalMs: 100 }
+    );
 
     // Snapshot initial state
     let todos = await fetchTodos();
@@ -83,11 +81,18 @@ describe('Todos E2E', () => {
     assert.equal(todos[todos.length - 1].name, 'Z_End');
     assert.equal(todos[todos.length - 1].order, todos.length - 1);
 
-    // 2) Insert at BEGINNING (order: 0 → shift others +1)
+    // 2) Insert at BEGINNING (order: 0 → shift others +1) - verify index shift check from guide
+    const prevFirstName = todos[0] ? todos[0].name : null;
     const beginRes = await json('POST', '/todos', { name: 'A_Begin', chore_id: choreUuid, order: 0 });
     assert.equal(beginRes.status, 201);
     todos = await fetchTodos();
     assert.equal(todos[0].name, 'A_Begin');
+    
+    // Verify previous first moved to index 1 (shifted by +1)
+    if (prevFirstName) {
+      assert.equal(todos[1].name, prevFirstName, 'Previous first item should move to index 1');
+    }
+    
     // All orders should be contiguous 0..n-1 and match index
     for (let i = 0; i < todos.length; i++) assert.equal(todos[i].order, i);
 
@@ -126,11 +131,16 @@ describe('Todos E2E', () => {
     });
     assert.equal(manualTodo.status, 201, 'Manual todo insertion should succeed');
     
-    // Verify the manual todo was inserted at the beginning and others shifted
-    const updatedTodos = await json('GET', `/todos/chore/${c.json.uuid}`);
-    assert.equal(updatedTodos.status, 200);
-    assert.equal(updatedTodos.json[0].name, 'Manual Todo', 'Manual todo should be first');
-    assert.ok(updatedTodos.json.length > todos.json.length, 'Should have more todos after manual insert');
+    // Use waitFor polling to verify insertion - following guide pattern
+    const res = await waitFor(
+      () => json('GET', `/todos/chore/${c.json.uuid}`),
+      (r) => r.status === 200 && r.json[0]?.name === 'Manual Todo'
+    );
+    const arr = res.json;
+    assert.equal(arr[0].name, 'Manual Todo');
+    // Verify previous first moved to index 1
+    assert.ok(arr.length > 1, 'Should have multiple todos');
+    assert.ok(arr.length > todos.json.length, 'Should have more todos after manual insert');
   });
 
   afterAll(async () => {

@@ -46,7 +46,7 @@ describe('API negatives E2E (auth + not-found + bad-input)', () => {
     assert.equal((await json('GET', `/points/${homeId}`, undefined, hdr)).status, 403);
     assert.equal((await json('GET', `/approvals/${choreUuid}`, undefined, hdr)).status, 403);
     const claimOut = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...hdr });
-    assert.ok([403, 409].includes(claimOut.status));
+    assert.equal(claimOut.status, 403);
   });
 
   it('404: nonexistent resources on valid-auth requests', async () => {
@@ -64,6 +64,16 @@ describe('API negatives E2E (auth + not-found + bad-input)', () => {
     const hdr = { Authorization: `Bearer ${tokenA}` };
     // disputes list requires homeId query param
     assert.equal((await json('GET', `/disputes`, undefined, hdr)).status, 400);
+  });
+
+  it('422: invalid body/shape', async () => {
+    const hdr = { Authorization: `Bearer ${tokenA}` };
+    // invalid chore creation with wrong shape
+    assert.equal((await json('POST', '/chores', { invalid: 'shape' }, hdr)).status, 422);
+    // invalid dispute creation with wrong shape
+    assert.equal((await json('POST', '/disputes', { wrong: 'fields' }, hdr)).status, 422);
+    // invalid approval vote with wrong shape
+    assert.equal((await json('POST', `/approvals/${choreUuid}/vote`, { invalid: 'data' }, hdr)).status, 422);
   });
 
   afterAll(async () => {

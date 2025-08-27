@@ -6,6 +6,7 @@ import { buildFourPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
 import { createOrJoinUser } from '../helpers/users';
+import { expectApprovalVotePayload } from '../helpers/assertions';
 describe('Approvals semantics E2E', () => {
   const scenario = buildFourPersonHouse();
   const [alice, bob, diana, charlie] = scenario.users;
@@ -35,17 +36,20 @@ describe('Approvals semantics E2E', () => {
 
     // Single vote (Alice) insufficient in 4-person home
     const v1 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: alice.email }, tA);
-    assert.ok([200, 409].includes(v1.status));
+    assert.equal(v1.status, 200);
+    expectApprovalVotePayload(v1.json);
     const claimTooEarly = await agent.patch(`/chores/${choreUuid}/claim`).set({ ...tA });
     assert.ok([403, 409].includes(claimTooEarly.status));
 
     // Second vote (Bob) reaches threshold
     const v2 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: bob.email }, tB);
-    assert.ok([200, 409].includes(v2.status));
+    assert.equal(v2.status, 200);
+    expectApprovalVotePayload(v2.json);
 
-    // Third vote (Diana) is fine but not required; idempotent on repeats
+    // Third vote (Diana) is fine but not required; duplicate vote returns 409
     const v3 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: diana.email }, tD);
-    assert.ok([200, 409].includes(v3.status));
+    assert.equal(v3.status, 200);
+    expectApprovalVotePayload(v3.json);
     const v3again = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: diana.email }, tD);
     assert.equal(v3again.status, 409);
 

@@ -5,6 +5,7 @@ import { json, agent } from '../../helpers/hono-test-client';
 import { buildFourPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
+import { expectApprovalVotePayload } from '../helpers/assertions';
 describe('Four-Person Approvals E2E', () => {
   const scenario = buildFourPersonHouse();
   const [alice, bob, diana, charlie] = scenario.users;
@@ -45,18 +46,20 @@ describe('Four-Person Approvals E2E', () => {
 
     // Alice vote
     const v1 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: alice.email }, { Authorization: `Bearer ${tokenA}` });
-    assert.ok([200, 409].includes(v1.status));
+    assert.equal(v1.status, 200);
+    expectApprovalVotePayload(v1.json);
     // Bob vote
     const v2 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: bob.email }, { Authorization: `Bearer ${tokenB}` });
-    assert.ok([200, 409].includes(v2.status));
+    assert.equal(v2.status, 200);
+    expectApprovalVotePayload(v2.json);
     // Verify approved
     const st1 = await json('GET', `/approvals/${choreUuid}`, undefined, { Authorization: `Bearer ${tokenD}` });
     assert.equal(st1.status, 200);
     assert.ok(st1.json.votes >= st1.json.required);
 
-    // Unvote by Bob
-    const un = await json('POST', `/approvals/${choreUuid}/unvote`, {}, { Authorization: `Bearer ${tokenB}` });
-    assert.equal(un.status, 200);
+    // Unvote by Bob using DELETE endpoint
+    const un = await json('DELETE', `/approvals/${choreUuid}/vote`, undefined, { Authorization: `Bearer ${tokenB}` });
+    assert.equal(un.status, 204);
     // Verify dropped
     const st2 = await json('GET', `/approvals/${choreUuid}`, undefined, { Authorization: `Bearer ${tokenA}` });
     assert.equal(st2.status, 200);

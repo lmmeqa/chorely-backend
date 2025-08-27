@@ -6,6 +6,7 @@ import { buildTwoPersonHouse } from '../helpers/test-scenarios';
 import { supabaseSignupOrLogin } from '../helpers/supabase';
 import { resetBackendForEmails, cleanupTestData } from '../helpers/reset-backend';
 import { createOrJoinUser } from '../helpers/users';
+import { expectDisputeVotePayload } from '../helpers/assertions';
 describe('Dispute Votes E2E', () => {
   const scenario = buildTwoPersonHouse();
   const [alice, bob] = scenario.users;
@@ -37,9 +38,10 @@ describe('Dispute Votes E2E', () => {
 
   it('vote, status, user vote, remove vote', async () => {
     const tokenB = tokens[bob.email];
-    // Vote sustain
-    const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenB}` }).send({ vote: 'sustain' });
-    assert.equal(v.status, 204);
+    // Vote sustain - following guide pattern
+    const v = await json('POST', `/dispute-votes/${disputeUuid}/vote`, { choice: 'sustain' }, { Authorization: `Bearer ${tokenB}` });
+    assert.equal(v.status, 200);
+    expectDisputeVotePayload(v.json);
     // Status reflects
     const st = await json('GET', `/dispute-votes/${disputeUuid}/status`, undefined, { Authorization: `Bearer ${tokenB}` });
     assert.equal(st.status, 200);

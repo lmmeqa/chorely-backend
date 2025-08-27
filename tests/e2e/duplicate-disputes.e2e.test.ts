@@ -76,7 +76,7 @@ describe('Duplicate Disputes Prevention E2E', () => {
       );
       
       assert.equal(response.status, 409);
-      assert.ok(response.json.error.includes('A dispute already exists for this chore'));
+      assert.ok((response.json.error || '').includes('DUPLICATE_DISPUTE'));
     });
 
     it('should prevent same user from creating duplicate dispute', async () => {
@@ -91,7 +91,7 @@ describe('Duplicate Disputes Prevention E2E', () => {
       );
       
       assert.equal(response.status, 409);
-      assert.ok(response.json.error.includes('A dispute already exists for this chore'));
+      assert.ok((response.json.error || '').includes('DUPLICATE_DISPUTE'));
     });
 
     it('should allow creating dispute after previous one is resolved', async () => {

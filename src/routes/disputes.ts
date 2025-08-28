@@ -20,7 +20,7 @@ const createDisputeSchema = z.object({
                 .trim();
     }),
   imageUrl: z.string().url().optional(),
-});
+}).strict();
 
 // POST /disputes → 201
 disputesRoutes.post('/disputes', requireUser, async (c) => {
@@ -29,7 +29,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
   if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
 
   const ct = (c.req.header('content-type') || '').toLowerCase();
-  let payload: { choreId: string; reason: string; imageUrl?: string } = { choreId: '', reason: '' };
+  let payload: { choreId?: string; reason?: string; imageUrl?: string } = { choreId: '', reason: '' };
   let uploadedPath: string | undefined;
 
   if (ct.includes('multipart/form-data')) {
@@ -99,7 +99,8 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
   
   // Validate payload using schema
   try {
-    payload = createDisputeSchema.parse(payload);
+    const validatedPayload = createDisputeSchema.parse(payload);
+    payload = validatedPayload;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return c.json({ error: 'Validation failed', details: error.errors }, 422);
@@ -118,16 +119,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
     .limit(1);
   if (!m) return c.json({ error: 'Forbidden: not a member of this home' }, 403);
 
-  // Check if there's already an active dispute for this chore
-  const [existingDispute] = await db
-    .select({ uuid: disputes.uuid })
-    .from(disputes)
-    .where(and(eq(disputes.choreId, payload.choreId), eq(disputes.status, 'pending')))
-    .limit(1);
-  if (existingDispute) {
-    return c.json({ error: 'DUPLICATE_DISPUTE: A dispute already exists for this chore', code: 'DUPLICATE_DISPUTE' }, 409);
-  }
-
+  // Rely on database unique constraint for race-condition-safe dispute creation
   try {
     const [row] = await db
       .insert(disputes)
@@ -139,12 +131,25 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
         status: 'pending',
       })
       .returning();
+    console.log('[dispute create] Successfully created dispute:', row.uuid);
     return c.json(row, 201);
   } catch (e: any) {
-    // Check if this is a unique constraint violation
-    if (e.code === '23505' && e.constraint === 'disputes_open_unique') {
+    console.error('[dispute create] Database error caught:', e);
+    
+    // Check for unique constraint violations (Drizzle wraps PostgreSQL errors in cause)
+    const pgError = e.cause || e;
+    
+    if (
+      pgError?.code === '23505' || 
+      pgError?.constraint === 'idx_disputes_open_unique' ||
+      e.message?.includes('duplicate key') || 
+      e.message?.includes('unique constraint')
+    ) {
+      console.log('[dispute create] Detected unique constraint violation, returning 409');
       return c.json({ error: 'DUPLICATE_DISPUTE' }, 409);
     }
+    
+    console.error('[dispute create] Unexpected database error:', e);
     throw e;
   }
 });

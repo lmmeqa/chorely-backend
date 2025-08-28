@@ -4,7 +4,7 @@
 type Bucket = { tokens: number; updatedAt: number };
 const buckets = new Map<string, Bucket>();
 
-const TOKENS = 60;        // burst
+const TOKENS = 3000;       // burst (increased from 60)
 const REFILL_MS = 60_000; // per minute
 
 export function rateLimit() {

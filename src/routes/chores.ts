@@ -17,7 +17,11 @@ export const choresRoutes = new Hono();
 const CreateChore = z.object({
   name: z.string().min(1).max(500),
   description: z.string().max(2000).default(""),
-  time: z.coerce.date(),
+  time: z.string().refine((val) => {
+    // Accept ISO format like '2032-01-01T00:00:00' but reject malformed formats like '2032/01/01 00:00:00'
+    const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+    return isoRegex.test(val) && !isNaN(Date.parse(val));
+  }, { message: "Invalid date format. Expected ISO format like '2032-01-01T00:00:00'" }).transform((val) => new Date(val)),
   icon: z.string().default("circle"),
   home_id: z.string().uuid(),
   points: z.number().int().min(1).max(10000).default(1),
@@ -149,6 +153,13 @@ choresRoutes.get("/chores/user", requireUser, async (c) => {
 choresRoutes.get("/chores/:uuid", requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
+  
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(uuid)) {
+    return c.json({ error: "Invalid UUID format" }, 400);
+  }
+  
   const [row] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
   if (!row) return c.json({ error: "not found" }, 404);
   const signed = await withSignedPhoto(row, c.env);

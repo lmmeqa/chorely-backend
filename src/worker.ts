@@ -65,9 +65,9 @@ app.use('*', (c, next) => {
   const origins = getAllowedOrigins(c.env);
   return cors({
     origin: (origin) => {
-      if (!origin) return false; // disallow non-browser by default
-      if (origins.includes('*')) return true;
-      return origins.includes(origin);
+      if (!origin) return undefined; // disallow non-browser by default
+      if (origins.includes('*')) return origin;
+      return origins.includes(origin) ? origin : undefined;
     },
     allowHeaders: ['Authorization', 'Content-Type'],
     allowMethods: ['GET','POST','PATCH','DELETE','OPTIONS'],

@@ -49,6 +49,13 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get("user") as { email?: string };
   const { uuid } = c.req.param();
+  
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(uuid)) {
+    return c.json({ error: "Invalid UUID format" }, 400);
+  }
+  
   const body = await c.req.json().catch(() => ({}));
   
   // Validate body with strict schema

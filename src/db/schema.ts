@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, integer, pgEnum, index, primaryKey, uniqueIndex } from "drizzle-orm/pg-core";
+import { eq } from "drizzle-orm";
 
 // Enums
 export const choreStatusEnum = pgEnum("chore_status", ["unapproved", "unclaimed", "claimed", "complete"]);
@@ -93,6 +94,8 @@ export const disputes = pgTable("disputes", {
   statusIdx: index("idx_disputes_status").on(table.status),
   choreIdIdx: index("idx_disputes_chore_id").on(table.choreId),
   disputerEmailIdx: index("idx_disputes_disputer_email").on(table.disputerEmail),
+  // Unique constraint to prevent multiple pending disputes per chore
+  openDisputeUnique: uniqueIndex("idx_disputes_open_unique").on(table.choreId).where(eq(table.status, 'pending')),
 }));
 
 export const disputeVotes = pgTable("dispute_votes", {

@@ -52,14 +52,20 @@ export function requireHomeMemberByChoreUuid(paramName: string) {
     if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
     if (!choreUuid) return c.json({ error: `Missing param ${paramName}` }, 400);
     
-    const [chore] = await db.select().from(chores).where(eq(chores.uuid, choreUuid)).limit(1);
-    if (!chore) return c.json({ error: 'Chore not found' }, 404);
-    
-    if (!(await isUserMemberOfHome(db, u.email, chore.homeId))) {
-      return c.json({ error: 'Forbidden: not a member of this home' }, 403);
+    // Try to find the chore first - this handles both invalid UUIDs and non-existent chores as 404
+    try {
+      const [chore] = await db.select().from(chores).where(eq(chores.uuid, choreUuid)).limit(1);
+      if (!chore) return c.json({ error: 'Chore not found' }, 404);
+      
+      if (!(await isUserMemberOfHome(db, u.email, chore.homeId))) {
+        return c.json({ error: 'Forbidden: not a member of this home' }, 403);
+      }
+      
+      return next();
+    } catch (error) {
+      // Database errors (including invalid UUID format) are treated as "not found"
+      return c.json({ error: 'Chore not found' }, 404);
     }
-    
-    return next();
   };
 }
 

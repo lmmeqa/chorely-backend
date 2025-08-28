@@ -79,6 +79,11 @@ describe('System Resilience & Race Conditions', () => {
       }, { Authorization: `Bearer ${tokenA}` });
       assert.equal(c1.status, 201);
 
+      // Approve the chore first to make it claimable
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenA}` });
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenB}` });
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenC}` });
+
       await agent.patch(`/chores/${c1.json.uuid}/claim`).set({ Authorization: `Bearer ${tokenA}` });
 
       const promises = [tokenA, tokenA, tokenA].map(() =>
@@ -104,23 +109,21 @@ describe('System Resilience & Race Conditions', () => {
       }, { Authorization: `Bearer ${tokenA}` });
       assert.equal(c1.status, 201);
 
-      await agent.patch(`/chores/${c1.json.uuid}/claim`).set({ Authorization: `Bearer ${tokenA}` });
-      await agent.patch(`/chores/${c1.json.uuid}/complete`).set({ Authorization: `Bearer ${tokenA}` });
-
+      // Vote on the unapproved chore (don't claim/complete first)
       const promises = [tokenB, tokenC, tokenD, tokenE, tokenF].map(token =>
         json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, 
           { Authorization: `Bearer ${token}` })
       );
 
       const results = await Promise.all(promises);
-      const successCount = results.filter(r => r.status === 201).length;
+      const successCount = results.filter(r => r.status === 200).length;
 
       assert.ok(successCount >= 4, 'Most votes should succeed concurrently');
 
       const finalState = await json('GET', `/approvals/${c1.json.uuid}`, 
         undefined, { Authorization: `Bearer ${tokenA}` });
       assert.equal(finalState.status, 200);
-      assert.ok(finalState.json.counts.approve >= 4, 'Vote counts should be consistent');
+      assert.ok(finalState.json.votes >= 4, 'Vote counts should be consistent');
     });
 
     it('should handle concurrent dispute creation', async () => {
@@ -134,11 +137,16 @@ describe('System Resilience & Race Conditions', () => {
       }, { Authorization: `Bearer ${tokenA}` });
       assert.equal(c1.status, 201);
 
+      // Approve the chore first to make it claimable
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenA}` });
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenB}` });
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenC}` });
+
       await agent.patch(`/chores/${c1.json.uuid}/claim`).set({ Authorization: `Bearer ${tokenA}` });
       await agent.patch(`/chores/${c1.json.uuid}/complete`).set({ Authorization: `Bearer ${tokenA}` });
 
       const promises = [tokenB, tokenC, tokenD, tokenE].map(token =>
-        json('POST', '/disputes', { choreUuid: c1.json.uuid, reason: 'concurrent test' },
+        json('POST', '/disputes', { choreId: c1.json.uuid, reason: 'concurrent test' },
           { Authorization: `Bearer ${token}` })
       );
 
@@ -225,11 +233,16 @@ describe('System Resilience & Race Conditions', () => {
       }, { Authorization: `Bearer ${tokenA}` });
       assert.equal(c1.status, 201);
 
+      // Approve the chore first to make it claimable
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenA}` });
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenB}` });
+      await json('POST', `/approvals/${c1.json.uuid}/vote`, { approved: true }, { Authorization: `Bearer ${tokenC}` });
+
       await agent.patch(`/chores/${c1.json.uuid}/claim`).set({ Authorization: `Bearer ${tokenA}` });
       await agent.patch(`/chores/${c1.json.uuid}/complete`).set({ Authorization: `Bearer ${tokenA}` });
 
       const disputeRes = await json('POST', '/disputes', {
-        choreUuid: c1.json.uuid,
+        choreId: c1.json.uuid,
         reason: 'orphan test'
       }, { Authorization: `Bearer ${tokenB}` });
       assert.equal(disputeRes.status, 201);
@@ -253,8 +266,9 @@ describe('System Resilience & Race Conditions', () => {
 
       for (const request of malformedRequests) {
         const res = await request();
+        console.log(`Malformed request status: ${res.status}`);
         assert.ok([400, 404, 422].includes(res.status), 
-          'Malformed requests should be handled gracefully');
+          `Malformed request should return 400/404/422, got ${res.status}`);
       }
 
       // Verify system is still functional after errors

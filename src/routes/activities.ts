@@ -140,7 +140,7 @@ activitiesRoutes.get("/activities", requireUser, async (c) => {
   });
 
   const statusEvents = recent.map((r, i) => ({
-    // give events a string id as expected by tests
+    // STATUS_CHANGED events need string IDs as expected by tests
     id: `ev-${r.uuid}`,
     ts: r.updatedAt ? new Date(r.updatedAt).getTime() : 0,
     type: "STATUS_CHANGED",
@@ -157,14 +157,14 @@ activitiesRoutes.get("/activities", requireUser, async (c) => {
   const items = [...statusEvents, ...out].sort((a, b) => {
     const byTs = (b.ts || 0) - (a.ts || 0);
     if (byTs !== 0) return byTs;
-    // Handle mixed types: string IDs for events, numeric IDs for chores
+    // Handle mixed ID types: string IDs for events, numeric IDs for chores
     if (typeof a.id === 'string' && typeof b.id === 'string') {
       return b.id.localeCompare(a.id);
     }
     if (typeof a.id === 'number' && typeof b.id === 'number') {
-      return b.id - a.id;
+      return (b.id || 0) - (a.id || 0);
     }
-    // String IDs sort before numeric IDs
+    // String IDs sort before numeric IDs for same timestamp
     return typeof a.id === 'string' ? -1 : 1;
   });
 

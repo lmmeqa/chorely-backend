@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "idx_disputes_open_unique" ON "disputes" USING btree ("chore_id") WHERE "disputes"."status" = 'pending';

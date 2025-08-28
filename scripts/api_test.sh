@@ -51,7 +51,7 @@ if [[ -z "$HOME_ID" || "$HOME_ID" == null ]]; then
 fi
 
 echo "→ Create backend user (201 or 409)"
-USR_EMAIL="smoke.user@local.test"
+USR_EMAIL="smoke.user@example.com"
 USR_RES=$(curl -sS -X POST -H 'Content-Type: application/json' "$BASE_URL/user" -d "$(jq -nc --arg e "$USR_EMAIL" --arg h "$HOME_ID" '{email:$e, name:"Smoke", homeIds:[$h]}')" -w "\n%{http_code}")
 USR_CODE="${USR_RES##*$'\n'}"; USR_BODY="${USR_RES%$'\n'*}"
 if [[ "$USR_CODE" != "201" && "$USR_CODE" != "409" ]]; then

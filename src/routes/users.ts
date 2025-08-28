@@ -155,11 +155,13 @@ usersRoutes.post("/user", async (c) => {
                 return c.json({ error: "HOME_NOT_FOUND" }, 404);
             }
 
-            // Add user to homes (non-blocking, don't await)
+            // Add user to homes
             for (const homeId of homeIds) {
-                db.insert(userHomes).values({ userEmail: email, homeId, points: 0 }).onConflictDoNothing().catch(e => {
+                try {
+                    await db.insert(userHomes).values({ userEmail: email, homeId, points: 0 }).onConflictDoNothing();
+                } catch (e) {
                     console.error(`Error adding user to home ${homeId}:`, e);
-                });
+                }
             }
         }
 

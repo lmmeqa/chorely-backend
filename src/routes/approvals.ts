@@ -11,7 +11,7 @@ export const approvalsRoutes = new Hono();
 const VoteSchema = z.object({
   userEmail: z.string().email().optional(),
   approved: z.boolean().optional(),
-}).passthrough();
+}).strict();
 
 function calcRequired(totalUsers: number): number {
   return totalUsers <= 1 ? 1 : Math.max(2, Math.ceil(totalUsers * 0.5));
@@ -51,15 +51,17 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
   const { uuid } = c.req.param();
   const body = await c.req.json().catch(() => ({}));
   
-  // Validate body (but allow extra fields)
+  // Validate body with strict schema
+  let data: z.infer<typeof VoteSchema>;
   try {
-    VoteSchema.parse(body);
-  } catch (error) {
-    // Don't reject on validation errors, just log
-    console.warn('Vote validation warning:', error);
+    data = VoteSchema.parse(body);
+  } catch (e) {
+    if (e instanceof z.ZodError) return c.json({ error: "Validation failed", details: e.errors }, 422);
+    return c.json({ error: "Invalid request body" }, 400);
   }
   
-  const email = (body.userEmail as string) || u?.email;
+  // Users can only vote for themselves
+  const email = u?.email;
   if (!email) return c.json({ error: "email required" }, 400);
 
   // Check if chore exists and is in correct state for voting

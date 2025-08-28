@@ -128,17 +128,25 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
     return c.json({ error: 'DUPLICATE_DISPUTE: A dispute already exists for this chore', code: 'DUPLICATE_DISPUTE' }, 409);
   }
 
-  const [row] = await db
-    .insert(disputes)
-    .values({
-      choreId: payload.choreId,
-      disputerEmail: u.email!,
-      reason: payload.reason,
-      imageUrl: uploadedPath || payload.imageUrl || null, // store path if we uploaded, else external URL
-      status: 'pending',
-    })
-    .returning();
-  return c.json(row, 201);
+  try {
+    const [row] = await db
+      .insert(disputes)
+      .values({
+        choreId: payload.choreId,
+        disputerEmail: u.email!,
+        reason: payload.reason,
+        imageUrl: uploadedPath || payload.imageUrl || null, // store path if we uploaded, else external URL
+        status: 'pending',
+      })
+      .returning();
+    return c.json(row, 201);
+  } catch (e: any) {
+    // Check if this is a unique constraint violation
+    if (e.code === '23505' && e.constraint === 'disputes_open_unique') {
+      return c.json({ error: 'DUPLICATE_DISPUTE' }, 409);
+    }
+    throw e;
+  }
 });
 
 // POST /disputes/:uuid/vote { vote: 'sustain'|'overrule' }

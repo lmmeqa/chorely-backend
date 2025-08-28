@@ -46,10 +46,9 @@ describe('Approvals semantics E2E', () => {
     assert.equal(v2.status, 200);
     expectApprovalVotePayload(v2.json);
 
-    // Third vote (Diana) is fine but not required; duplicate vote returns 409
+    // Third vote (Diana) after approval threshold should return 409
     const v3 = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: diana.email }, tD);
-    assert.equal(v3.status, 200);
-    expectApprovalVotePayload(v3.json);
+    assert.equal(v3.status, 409);
     const v3again = await json('POST', `/approvals/${choreUuid}/vote`, { userEmail: diana.email }, tD);
     assert.equal(v3again.status, 409);
 

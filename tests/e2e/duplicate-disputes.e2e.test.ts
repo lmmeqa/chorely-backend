@@ -4,6 +4,7 @@ import { json, agent } from '../helpers/hono-test-client';
 import { supabaseSignupOrLogin } from './helpers/supabase';
 import { buildTwoPersonHouse } from './helpers/test-scenarios';
 import { resetBackendForEmails, cleanupTestData } from './helpers/reset-backend';
+import { expectDisputeVotePayload } from './helpers/assertions';
 
 describe('Duplicate Disputes Prevention E2E', () => {
   const scenario = buildTwoPersonHouse();
@@ -107,14 +108,11 @@ describe('Duplicate Disputes Prevention E2E', () => {
       assert.ok(existingDispute, 'Should find the existing dispute');
       
       // Resolve the dispute (sustain it)
-      const sustainResponse = await agent
-        .patch(`/disputes/${existingDispute.uuid}/sustain`)
-        .set({ Authorization: `Bearer ${token1}` });
+      const sustainResponse = await json('POST', `/dispute-votes/${existingDispute.uuid}/vote`, 
+        { vote: 'sustain' }, { Authorization: `Bearer ${token1}` });
       
-      assert.equal(sustainResponse.status, 204);
-      
-      // Wait a bit for the dispute to be processed
-      await new Promise(resolve => setTimeout(resolve, 100));
+      assert.equal(sustainResponse.status, 200);
+      expectDisputeVotePayload(sustainResponse.json);
       
       // Now create a new chore to test dispute creation after resolution
       const newChore = await json('POST', '/chores', {

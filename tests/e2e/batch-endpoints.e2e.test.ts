@@ -109,16 +109,20 @@ describe('Batch Endpoints E2E', () => {
       assert.ok(data.allUserPoints[user2] !== undefined);
     });
 
-    it('should handle missing user parameter', async () => {
+    it('should work without user parameter (uses JWT token)', async () => {
       const response = await json(
         'GET', 
-        `/home/${homeId}/summary`,
+        `/home/${homeId}/summary`,  // No user parameter needed
         undefined,
         { Authorization: `Bearer ${token1}` }
       );
       
-      assert.equal(response.status, 400);
-      assert.ok(response.json.error.includes('user'));
+      assert.equal(response.status, 200);  // ✅ Should work fine
+      assert.ok(response.json.availableChores);
+      assert.ok(response.json.myChores);
+      assert.ok(response.json.unapprovedChores);
+      assert.ok(typeof response.json.userPoints === 'number');
+      assert.ok(response.json.allUserPoints);
     });
 
     it('should handle invalid home ID format', async () => {

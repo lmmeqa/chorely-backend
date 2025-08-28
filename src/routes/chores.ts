@@ -14,12 +14,12 @@ export const choresRoutes = new Hono();
 // Schemas
 // ──────────────────────────────────────────────────────────────────────────────
 const CreateChore = z.object({
-  name: z.string().min(1),
-  description: z.string().default(""),
-  time: z.union([z.string().datetime().catch("1970-01-01T00:00:00Z"), z.coerce.date()]),
+  name: z.string().min(1).max(500),
+  description: z.string().max(2000).default(""),
+  time: z.string(),
   icon: z.string().default("circle"),
   home_id: z.string().uuid(),
-  points: z.number().int().min(0).default(1),
+  points: z.number().int().min(1).max(10000).default(1),
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -28,14 +28,23 @@ const CreateChore = z.object({
 choresRoutes.post("/chores", requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const body = await c.req.json().catch(() => ({}));
-  const data = CreateChore.parse(body);
+  
+  let data;
+  try {
+    data = CreateChore.parse(body);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Validation failed', details: error.errors }, 422);
+    }
+    return c.json({ error: 'Invalid request body' }, 400);
+  }
 
   const [row] = await db
     .insert(chores)
     .values({
       name: data.name,
-      description: typeof data.time === "string" ? data.description : data.description, // keep it simple
-      time: new Date((data.time as any) ?? Date.now()),
+      description: data.description,
+      time: new Date(data.time),
       icon: data.icon,
       status: "unapproved",
       userEmail: null,

@@ -439,3 +439,17 @@ backend/
 ### Build
 - `build` - Build for production
 - `start` - Start production build locally
+
+---
+
+## Runtime env
+
+- `NODE_ENV` ∈ `development|staging|production`. Internal routes (`/internal/*`) are **disabled** in `production`.
+- `ALLOWED_ORIGINS` — comma-separated list of allowed origins for CORS, e.g.
+
+```
+https://chorely.app,https://chorely.pages.dev,exp://127.0.0.1:19000
+```
+
+- Minimal logging in production; richer logs in non-prod. No response/request bodies are logged in prod.
+- A lightweight in-memory rate limiter protects public endpoints (upgrade to DO/KV for higher scale).

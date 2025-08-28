@@ -121,6 +121,7 @@ export class RequestBuilder implements PromiseLike<TestResponse> {
   private headers: Record<string, string> = {};
   private body?: any;
   private attachment?: { field: string; buffer: Buffer; options: { filename: string; contentType: string } };
+  private queryParams: Record<string, string> = {};
 
   constructor(method: string, url: string) {
     this.method = method;
@@ -137,6 +138,14 @@ export class RequestBuilder implements PromiseLike<TestResponse> {
     return this;
   }
 
+  query(params: Record<string, string | number | boolean>): RequestBuilder {
+    this.queryParams = { 
+      ...this.queryParams, 
+      ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+    };
+    return this;
+  }
+
   attach(field: string, buffer: Buffer, options: { filename: string; contentType: string }): RequestBuilder {
     this.attachment = { field, buffer, options };
     return this;
@@ -150,10 +159,16 @@ export class RequestBuilder implements PromiseLike<TestResponse> {
   }
 
   private async execute(): Promise<TestResponse> {
-    if (this.attachment) {
-      return multipart(this.method, this.url, this.attachment.field, this.attachment.buffer, this.attachment.options, this.headers);
+    let finalUrl = this.url;
+    if (Object.keys(this.queryParams).length > 0) {
+      const searchParams = new URLSearchParams(this.queryParams);
+      finalUrl += (this.url.includes('?') ? '&' : '?') + searchParams.toString();
     }
-    return json(this.method, this.url, this.body, this.headers);
+
+    if (this.attachment) {
+      return multipart(this.method, finalUrl, this.attachment.field, this.attachment.buffer, this.attachment.options, this.headers);
+    }
+    return json(this.method, finalUrl, this.body, this.headers);
   }
 }
 

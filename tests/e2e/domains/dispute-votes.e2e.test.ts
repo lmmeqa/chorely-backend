@@ -39,7 +39,7 @@ describe('Dispute Votes E2E', () => {
   it('vote, status, user vote, remove vote', async () => {
     const tokenB = tokens[bob.email];
     // Vote sustain - following guide pattern
-    const v = await json('POST', `/dispute-votes/${disputeUuid}/vote`, { choice: 'sustain' }, { Authorization: `Bearer ${tokenB}` });
+    const v = await json('POST', `/dispute-votes/${disputeUuid}/vote`, { vote: 'sustain' }, { Authorization: `Bearer ${tokenB}` });
     assert.equal(v.status, 200);
     expectDisputeVotePayload(v.json);
     // Status reflects

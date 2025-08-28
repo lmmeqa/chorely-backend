@@ -8,6 +8,11 @@ import { and, count, eq, inArray } from "drizzle-orm";
 
 export const approvalsRoutes = new Hono();
 
+const VoteSchema = z.object({
+  userEmail: z.string().email().optional(),
+  approved: z.boolean().optional(),
+}).passthrough();
+
 function calcRequired(totalUsers: number): number {
   return totalUsers <= 1 ? 1 : Math.max(2, Math.ceil(totalUsers * 0.5));
 }
@@ -39,12 +44,21 @@ approvalsRoutes.get("/approvals/:uuid", requireUser, requireHomeMemberByChoreUui
   });
 });
 
-// POST /approvals/:uuid/vote { userEmail }
+// POST /approvals/:uuid/vote { userEmail?, approved? }
 approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get("user") as { email?: string };
   const { uuid } = c.req.param();
   const body = await c.req.json().catch(() => ({}));
+  
+  // Validate body (but allow extra fields)
+  try {
+    VoteSchema.parse(body);
+  } catch (error) {
+    // Don't reject on validation errors, just log
+    console.warn('Vote validation warning:', error);
+  }
+  
   const email = (body.userEmail as string) || u?.email;
   if (!email) return c.json({ error: "email required" }, 400);
 
@@ -78,10 +92,40 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
     await db.update(chores).set({ status: "unclaimed", updatedAt: new Date() }).where(eq(chores.uuid, uuid));
   }
 
-  return c.json({ votes: voters.length, required, approved: voters.length >= required }, 200);
+  // Return payload matching expectApprovalVotePayload contract
+  const myVote = voters.some(v => v.userEmail === email) ? 'approve' : null;
+  
+  return c.json({ 
+    choreUuid: uuid,
+    approved: voters.length >= required,
+    counts: {
+      approve: voters.length,
+      totalMembers: Number(cnt)
+    },
+    myVote
+  }, 200);
 });
 
-// POST /approvals/:uuid/unvote
+// DELETE /approvals/:uuid/vote (unvote)
+approvalsRoutes.delete("/approvals/:uuid/vote", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
+  const db = dbFromEnv(c.env as any);
+  const u = (c as any).get("user") as { email?: string };
+  if (!u?.email) return c.json({ error: "Unauthorized" }, 401);
+  const { uuid } = c.req.param();
+  await db.delete(choreApprovals).where(and(eq(choreApprovals.choreUuid, uuid), eq(choreApprovals.userEmail, u.email.toLowerCase())));
+
+  const [chore] = await db.select().from(chores).where(eq(chores.uuid, uuid));
+  if (!chore) return c.json({ error: "not found" }, 404);
+  const voters = await db.select({ userEmail: choreApprovals.userEmail }).from(choreApprovals).where(eq(choreApprovals.choreUuid, uuid));
+  const [{ cnt }] = await db.select({ cnt: count() }).from(userHomes).where(eq(userHomes.homeId, chore.homeId));
+  const required = calcRequired(Number(cnt));
+  if (voters.length < required && chore.status === "unclaimed") {
+    await db.update(chores).set({ status: "unapproved", updatedAt: new Date() }).where(eq(chores.uuid, uuid));
+  }
+  return c.body(null, 204);
+});
+
+// POST /approvals/:uuid/unvote (legacy)
 approvalsRoutes.post("/approvals/:uuid/unvote", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get("user") as { email?: string };

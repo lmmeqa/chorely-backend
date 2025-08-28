@@ -128,7 +128,7 @@ describe('Chorely API E2E', () => {
     disputeUuid = d.json.uuid;
 
     const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${token2}` }).send({ vote: 'sustain' });
-    assert.equal(v.status, 204);
+    assert.equal(v.status, 200);
 
     const st = await json('GET', `/dispute-votes/${disputeUuid}/status`, undefined, { Authorization: `Bearer ${token1}` });
     assert.equal(st.status, 200);

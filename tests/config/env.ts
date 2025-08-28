@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
+// Ensure NODE_ENV is set to test for middleware behavior
+process.env.NODE_ENV = 'test';
+
 
 // Track which keys fell back to defaults (we will only log keys, never values)
 const defaulted: string[] = [];

@@ -66,86 +66,40 @@ const formatResponse = (response: Response): string => {
   }
 };
 
+const isProdEnv = (env: any) => (env?.NODE_ENV ?? process.env.NODE_ENV) === 'production';
+
 export const logger = async (c: Context, next: Next) => {
-  const startTime = Date.now();
+  const start = Date.now();
+  await next();
+  const dur = Date.now() - start;
+
+  if (isProdEnv(c.env)) {
+    // Minimal, PII-safe line in production
+    console.log(`[${c.req.method}] ${c.req.url} ${dur}ms`);
+    return;
+  }
+
+  // Dev: slightly richer, but never dump bodies
   const method = c.req.method;
   const url = c.req.url;
-  const userAgent = c.req.header("User-Agent") || "Unknown";
-  const ip = c.req.header("X-Forwarded-For") || c.req.header("X-Real-IP") || "Unknown";
-  
-  // Log request start
-  const methodColor = getMethodColor(method);
-  console.log(
-    `${colors.gray}[${new Date().toISOString()}]${colors.reset} ` +
-    `${methodColor}${method}${colors.reset} ` +
-    `${colors.cyan}${url}${colors.reset} ` +
-    `${colors.gray}from ${ip}${colors.reset} ` +
-    `${colors.gray}(${userAgent})${colors.reset}`
-  );
-
-  // Log request headers (if not muted)
-  if (process.env.MUTE_API_LOGS !== "true") {
-    const authHeader = c.req.header("Authorization");
-    if (authHeader) {
-      const tokenPreview = authHeader.startsWith("Bearer ") 
-        ? authHeader.substring(7, 15) + "..." 
-        : "[Non-Bearer Auth]";
-      console.log(`  ${colors.gray}Authorization: ${colors.yellow}${tokenPreview}${colors.reset}`);
-    }
-    
-    const contentType = c.req.header("Content-Type");
-    if (contentType) {
-      console.log(`  ${colors.gray}Content-Type: ${colors.cyan}${contentType}${colors.reset}`);
-    }
-  }
-
-  // Log request body for POST/PUT/PATCH requests
-  if (["POST", "PUT", "PATCH"].includes(method.toUpperCase())) {
-    try {
-      const body = await c.req.json().catch(() => null);
-      if (body) {
-        console.log(`  ${colors.gray}Request Body: ${colors.white}${formatBody(body)}${colors.reset}`);
-      }
-    } catch {
-      // Body might not be JSON or might be empty
-    }
-  }
-
-  // Execute the request
-  await next();
-  
-  const endTime = Date.now();
-  const duration = endTime - startTime;
   const status = c.res.status;
+  const methodColor = getMethodColor(method);
   const statusColor = getStatusColor(status);
   
-  // Log response
   console.log(
-    `${colors.gray}[${new Date().toISOString()}]${colors.reset} ` +
+    `${colors.gray}[dev]${colors.reset} ` +
     `${methodColor}${method}${colors.reset} ` +
     `${colors.cyan}${url}${colors.reset} ` +
     `${statusColor}${status}${colors.reset} ` +
-    `${colors.gray}(${duration}ms)${colors.reset}`
+    `${colors.gray}(${dur}ms)${colors.reset}`
   );
 
-  // Log response details for errors
-  if (status >= 400) {
-    try {
-      const responseBody = await c.res.clone().json().catch(() => null);
-      if (responseBody) {
-        console.log(`  ${colors.red}Error Response: ${colors.white}${formatBody(responseBody)}${colors.reset}`);
-      }
-    } catch {
-      // Response might not be JSON
-    }
+  // Log slow requests in dev
+  if (dur > 1000) {
+    console.log(`  ${colors.yellow}⚠️  Slow request: ${dur}ms${colors.reset}`);
   }
 
-  // Log slow requests
-  if (duration > 1000) {
-    console.log(`  ${colors.yellow}⚠️  Slow request: ${duration}ms${colors.reset}`);
-  }
-
-  // Log database errors specifically
+  // Log server errors in dev
   if (status >= 500) {
     console.log(`  ${colors.red}🚨 Server Error - Check database connection and logs${colors.reset}`);
   }

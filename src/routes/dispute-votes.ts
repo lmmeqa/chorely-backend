@@ -74,8 +74,33 @@ disputeVotesRoutes.post('/dispute-votes/:disputeUuid/vote', requireUser, async (
   } catch (e) {
     console.error('[auto dispute resolution] failed:', e);
   }
+
+  // Get updated dispute and vote counts for response
+  const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, disputeUuid));
+  const votes = await db.select().from(disputeVotes).where(eq(disputeVotes.disputeUuid, disputeUuid));
+  const sustainVotes = votes.filter(r => r.vote === 'sustain').length;
+  const overruleVotes = votes.filter(r => r.vote === 'overrule').length;
   
-  return c.body(null, 204);
+  // Get total eligible voters (home members)
+  const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute?.choreId || ''));
+  const [{ cnt: totalMembers }] = chore ? 
+    await db.select({ cnt: count() }).from(userHomes).where(eq(userHomes.homeId, chore.homeId)) :
+    [{ cnt: 0 }];
+
+  const isResolved = dispute?.status === 'sustained' || dispute?.status === 'overruled';
+  const resolution = dispute?.status === 'sustained' ? 'sustain' : 
+                    dispute?.status === 'overruled' ? 'overrule' : null;
+
+  return c.json({
+    disputeUuid,
+    resolved: isResolved,
+    resolution,
+    counts: {
+      sustain: sustainVotes,
+      overrule: overruleVotes,
+      totalMembers: Number(totalMembers)
+    }
+  }, 200);
 });
 
 disputeVotesRoutes.delete('/dispute-votes/:disputeUuid/vote', requireUser, async (c) => {

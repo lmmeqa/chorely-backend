@@ -10,7 +10,15 @@ export const disputesRoutes = new Hono();
 
 const createDisputeSchema = z.object({
   choreId: z.string().uuid(),
-  reason: z.string().min(1),
+  reason: z.union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform(val => String(val || ''))
+    .pipe(z.string().min(1).max(1000))
+    .transform(val => {
+      // Basic XSS sanitization
+      return val.replace(/<script[^>]*>.*?<\/script>/gi, '')
+                .replace(/<[^>]+>/g, '') // Strip HTML tags
+                .trim();
+    }),
   imageUrl: z.string().url().optional(),
 });
 
@@ -88,8 +96,16 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
   }
 
   console.log('[dispute create] Final payload:', payload);
-  if (!payload.choreId) return c.json({ error: 'Missing choreId' }, 400);
-  if (!payload.reason) return c.json({ error: 'Missing reason' }, 400);
+  
+  // Validate payload using schema
+  try {
+    payload = createDisputeSchema.parse(payload);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Validation failed', details: error.errors }, 422);
+    }
+    return c.json({ error: 'Invalid request body' }, 400);
+  }
 
   // Ensure chore exists + user is a member of the chore's home
   const [chore] = await db.select().from(chores).where(eq(chores.uuid, payload.choreId)).limit(1);
@@ -109,7 +125,7 @@ disputesRoutes.post('/disputes', requireUser, async (c) => {
     .where(and(eq(disputes.choreId, payload.choreId), eq(disputes.status, 'pending')))
     .limit(1);
   if (existingDispute) {
-    return c.json({ error: 'A dispute already exists for this chore' }, 409);
+    return c.json({ error: 'DUPLICATE_DISPUTE: A dispute already exists for this chore', code: 'DUPLICATE_DISPUTE' }, 409);
   }
 
   const [row] = await db

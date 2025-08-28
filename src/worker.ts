@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { loadConfig } from './lib/config';
 import { usersRoutes } from './routes/users';
 import { homesRoutes } from './routes/homes';
 import { choresRoutes } from './routes/chores';
@@ -10,7 +11,17 @@ import { activitiesRoutes } from './routes/activities';
 import { todosRoutes } from './routes/todos';
 import { disputeVotesRoutes } from './routes/dispute-votes';
 import { logger } from './middleware/logger';
+import { rateLimit } from './middleware/rateLimit';
 import type { Bindings } from './lib/db';
+
+// Utility helpers
+const isProd = (env: any) => (env?.NODE_ENV ?? process.env.NODE_ENV) === 'production';
+
+function getAllowedOrigins(env: any): string[] {
+  const raw = (env?.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || '').trim();
+  if (!raw) return [];
+  return raw.split(',').map(s => s.trim()).filter(Boolean);
+}
 
 // Optional local static serving for /seed/* when running under Node (dev/tests)
 const addLocalStatic = (app: any) => {
@@ -46,20 +57,38 @@ app.use('*', async (c, next) => {
 // Add comprehensive logging middleware
 app.use('*', logger);
 
-app.use('*', cors());
+// Light rate limiting for public endpoints
+app.use('*', rateLimit());
+
+// Attach CORS using ALLOWED_ORIGINS list
+app.use('*', (c, next) => {
+  const origins = getAllowedOrigins(c.env);
+  return cors({
+    origin: (origin) => {
+      if (!origin) return false; // disallow non-browser by default
+      if (origins.includes('*')) return true;
+      return origins.includes(origin);
+    },
+    allowHeaders: ['Authorization', 'Content-Type'],
+    allowMethods: ['GET','POST','PATCH','DELETE','OPTIONS'],
+    credentials: true,
+    maxAge: 86400,
+  })(c, next);
+});
 
 app.get('/public/ping', (c) => c.json({ pong: true }));
 
-// Add a tiny /internal/db-ping to verify from the app
+// Internal/dev routes — gated to non-production
 app.get('/internal/db-ping', async (c) => {
+  if (isProd(c.env)) return c.text('Not Found', 404);
   const db = (await import('./lib/db')).dbFromEnv(c.env as any);
   // @ts-ignore - drizzle has .execute
   const res = await (db as any).execute('select current_user, current_database()');
   return c.json({ ok: true, res });
 });
 
-// Add a debug endpoint to check completed chores
 app.get('/internal/debug-chores', async (c) => {
+  if (isProd(c.env)) return c.text('Not Found', 404);
   const db = (await import('./lib/db')).dbFromEnv(c.env as any);
   const { chores, homes } = await import('./db/schema');
   const { eq } = await import('drizzle-orm');

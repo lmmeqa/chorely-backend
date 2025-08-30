@@ -12,20 +12,49 @@ disputeVotesRoutes.post('/dispute-votes/:disputeUuid/vote', requireUser, async (
   if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
   const { disputeUuid } = c.req.param();
   const body = await c.req.json().catch(() => ({} as any));
-  const vote = (body.vote as 'sustain'|'overrule') || null;
-  if (vote !== 'sustain' && vote !== 'overrule') return c.json({ error: 'invalid vote' }, 400);
+  
+  // Handle multiple vote formats: { choice: 'sustain' }, { vote: 'sustain' }, { sustain: true }, { overrule: true }
+  let choice = '';
+  if (body.choice) {
+    choice = body.choice.toString().toLowerCase();
+  } else if (body.vote) {
+    choice = body.vote.toString().toLowerCase();
+  } else if (body.sustain) {
+    choice = 'sustain';
+  } else if (body.overrule) {
+    choice = 'overrule';
+  }
+  
+  const actor = u.email; // authoritative identity - ignore any userEmail in body
+  
+  if (choice !== 'sustain' && choice !== 'overrule') return c.json({ error: 'invalid vote' }, 400);
+  
+  // Check if dispute exists and is still pending
+  const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, disputeUuid));
+  if (!dispute) return c.json({ error: 'dispute not found' }, 404);
+  if (dispute.status !== 'pending') return c.json({ error: 'dispute already resolved' }, 409);
+  
+  // Get the chore to verify home membership
+  const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute.choreId));
+  if (!chore) return c.json({ error: 'chore not found' }, 404);
+  
+  // Check if user is a member of the home
+  const [membership] = await db
+    .select({ userEmail: userHomes.userEmail })
+    .from(userHomes)
+    .where(and(eq(userHomes.homeId, chore.homeId), eq(userHomes.userEmail, actor.toLowerCase())))
+    .limit(1);
+  if (!membership) return c.json({ error: 'forbidden' }, 403);
   
   // Record the vote
-  await db.insert(disputeVotes).values({ disputeUuid, userEmail: u.email.toLowerCase(), vote }).onConflictDoUpdate({ target: [disputeVotes.disputeUuid, disputeVotes.userEmail], set: { vote } });
+  await db.insert(disputeVotes).values({ disputeUuid, userEmail: actor.toLowerCase(), vote: choice }).onConflictDoUpdate({ target: [disputeVotes.disputeUuid, disputeVotes.userEmail], set: { vote: choice } });
   
   // Check if dispute should be automatically resolved
   try {
-    const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, disputeUuid));
     if (!dispute || dispute.status !== 'pending') {
       return c.body(null, 204); // Already resolved or doesn't exist
     }
     
-    const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute.choreId));
     if (!chore) return c.body(null, 204);
     
     // Calculate voting status
@@ -76,21 +105,21 @@ disputeVotesRoutes.post('/dispute-votes/:disputeUuid/vote', requireUser, async (
   }
 
   // Get updated dispute and vote counts for response
-  const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, disputeUuid));
+  const [updatedDispute] = await db.select().from(disputes).where(eq(disputes.uuid, disputeUuid));
   const votes = await db.select().from(disputeVotes).where(eq(disputeVotes.disputeUuid, disputeUuid));
   const sustainVotes = votes.filter(r => r.vote === 'sustain').length;
   const overruleVotes = votes.filter(r => r.vote === 'overrule').length;
   
   // Get total eligible voters (home members)
-  const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute?.choreId || ''));
   const [{ cnt: totalMembers }] = chore ? 
     await db.select({ cnt: count() }).from(userHomes).where(eq(userHomes.homeId, chore.homeId)) :
     [{ cnt: 0 }];
 
-  const isResolved = dispute?.status === 'sustained' || dispute?.status === 'overruled';
-  const resolution = dispute?.status === 'sustained' ? 'sustain' : 
-                    dispute?.status === 'overruled' ? 'overrule' : null;
+  const isResolved = updatedDispute?.status === 'sustained' || updatedDispute?.status === 'overruled';
+  const resolution = updatedDispute?.status === 'sustained' ? 'sustain' : 
+                    updatedDispute?.status === 'overruled' ? 'overrule' : null;
 
+  // Return 200 with vote status for successful vote recording
   return c.json({
     disputeUuid,
     resolved: isResolved,
@@ -134,6 +163,7 @@ disputeVotesRoutes.get('/dispute-votes/:disputeUuid/status', requireUser, async 
     total_eligible_voters: Number(totalEligibleVoters),
     is_sustained: sustainVotes >= requiredVotes,
     is_overruled: overruleVotes >= requiredVotes,
+    voters: rows.map(r => ({ email: r.userEmail, vote: r.vote })),
   });
 });
 

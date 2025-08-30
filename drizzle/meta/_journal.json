@@ -15,6 +15,20 @@
       "when": 1756386330796,
       "tag": "0001_groovy_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756567200000,
+      "tag": "0002_add_dispute_unique_constraint",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756567300000,
+      "tag": "0003_add_status_events_table",
+      "breakpoints": true
     }
   ]
 }

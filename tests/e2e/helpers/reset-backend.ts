@@ -15,9 +15,12 @@ export async function resetBackendForEmails(emails: string[]): Promise<void> {
   } as any);
   await client.connect();
   try {
-    // no transaction; ignore missing tables
-    try { await client.query('DELETE FROM chore_approvals WHERE user_email = ANY($1)', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
+    // Clean up in proper dependency order to avoid constraint violations
+    try { await client.query('DELETE FROM dispute_votes WHERE dispute_uuid IN (SELECT uuid FROM disputes WHERE disputer_email = ANY($1))', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
     try { await client.query('DELETE FROM disputes WHERE disputer_email = ANY($1)', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
+    try { await client.query('DELETE FROM chore_approvals WHERE user_email = ANY($1)', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
+    try { await client.query('DELETE FROM chores WHERE user_email = ANY($1) OR home_id IN (SELECT home_id FROM user_homes WHERE user_email = ANY($1))', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
+    try { await client.query('DELETE FROM activities WHERE actor_email = ANY($1)', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
     try { await client.query('DELETE FROM user_homes WHERE user_email = ANY($1)', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
     try { await client.query('DELETE FROM users WHERE email = ANY($1)', [lower]); } catch (e: any) { if (e.code !== '42P01') throw e; }
   } finally {

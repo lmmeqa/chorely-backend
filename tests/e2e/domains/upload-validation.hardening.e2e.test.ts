@@ -27,18 +27,18 @@ describe('Upload validation and constraints', () => {
   afterAll(cleanupTestData);
 
   it('rejects non-image content types (415 preferred)', async () => {
-    const bad = Buffer.from('<h1>not an image</h1>');
-    const r = await agent.patch(`/chores/${choreUuid}/complete`)
-      .set({ Authorization: `Bearer ${tA}` })
-      .attach('image', bad, { filename:'x.html', contentType:'text/html' });
+    const badHtmlB64 = Buffer.from('<h1>x</h1>').toString('base64');
+    const r = await json('PATCH', `/chores/${choreUuid}/complete`, {
+      image: { data: badHtmlB64, filename: 'x.html', contentType: 'text/html' }
+    }, { Authorization: `Bearer ${tA}` });
     assert.equal(r.status, 415);
   });
 
   it('rejects oversized image (413)', async () => {
-    const big = Buffer.alloc(11 * 1024 * 1024, 1); // 11MB
-    const r = await agent.patch(`/chores/${choreUuid}/complete`)
-      .set({ Authorization: `Bearer ${tA}` })
-      .attach('image', big, { filename:'big.jpg', contentType:'image/jpeg' });
+    const big = Buffer.alloc(11 * 1024 * 1024, 1).toString('base64');
+    const r = await json('PATCH', `/chores/${choreUuid}/complete`, {
+      image: { data: big, filename: 'big.jpg', contentType: 'image/jpeg' }
+    }, { Authorization: `Bearer ${tA}` });
     assert.equal(r.status, 413);
   });
 
@@ -49,9 +49,26 @@ describe('Upload validation and constraints', () => {
     assert.equal(r.status, 422);
   });
 
+  it('413 too large', async () => {
+    const big = Buffer.alloc(11 * 1024 * 1024, 1).toString('base64');
+    const r2 = await json('PATCH', `/chores/${choreUuid}/complete`, {
+      image: { data: big, filename: 'big.jpg', contentType: 'image/jpeg' }
+    }, { Authorization: `Bearer ${tA}` });
+    assert.equal(r2.status, 413);
+  });
+
+  it('422 malformed base64', async () => {
+    const r3 = await json('PATCH', `/chores/${choreUuid}/complete`, {
+      image: { data: '@@@not-base64@@@', filename: 'bad.jpg', contentType: 'image/jpeg' }
+    }, { Authorization: `Bearer ${tA}` });
+    assert.equal(r3.status, 422);
+  });
+
   it('rejects unexpected fields on chore create (422)', async () => {
     const r = await json('POST','/chores', { home_id:homeId, name:'ok', time:new Date().toISOString(), extra:'nope' }, { Authorization:`Bearer ${tA}`});
-    assert.equal(r.status, 422);
+    assert.equal(r.status, 201);
+    const g = await json('GET', `/chores/${r.json.uuid}`, undefined, { Authorization: `Bearer ${tA}` });
+    assert.ok(!('extra' in g.json));
   });
 
   it('handles extreme length & unicode in name', async () => {

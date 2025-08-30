@@ -62,10 +62,24 @@ describe('Disputes domain E2E', () => {
     assert.ok(dispute.chore_points !== undefined, 'Dispute should include chore_points');
     assert.equal(dispute.chore_user_email, alice.email, 'Dispute should show correct chore user email');
 
-    // Sustain then overrule via admin endpoints (just exercise endpoints)
+    // Test sustain endpoint
     const s = await json('PATCH', `/disputes/${disputeUuid}/sustain`, {}, { Authorization: `Bearer ${tokens[bob.email]}` });
     assert.equal(s.status, 204);
-    const o = await json('PATCH', `/disputes/${disputeUuid}/overrule`, {}, { Authorization: `Bearer ${tokens[bob.email]}` });
+    
+    // Create a second chore and dispute to test overrule endpoint (can't overrule a sustained dispute)
+    const chore2 = await json('POST', '/chores', { home_id: homeId, name: 'Test Overrule Chore', description: 'for overrule test', time: new Date().toISOString(), icon: 'broom', points: 5 }, { Authorization: `Bearer ${tokens[alice.email]}` });
+    assert.equal(chore2.status, 201);
+    
+    // Claim and complete the second chore
+    await agent.patch(`/chores/${chore2.json.uuid}/claim`).set({ Authorization: `Bearer ${tokens[alice.email]}` });
+    await agent.patch(`/chores/${chore2.json.uuid}/complete`).set({ Authorization: `Bearer ${tokens[alice.email]}` }).attach('image', Buffer.from([1,2,3]), { filename: 'test2.jpg', contentType: 'image/jpeg' });
+    
+    // Create dispute for the second chore
+    const dispute2 = await json('POST', '/disputes', { choreId: chore2.json.uuid, reason: 'test overrule' }, { Authorization: `Bearer ${tokens[bob.email]}` });
+    assert.equal(dispute2.status, 201);
+    
+    // Test overrule endpoint on the second dispute
+    const o = await json('PATCH', `/disputes/${dispute2.json.uuid}/overrule`, {}, { Authorization: `Bearer ${tokens[bob.email]}` });
     assert.equal(o.status, 204);
   });
 

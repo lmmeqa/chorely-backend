@@ -151,8 +151,22 @@ describe('System Resilience & Race Conditions', () => {
       );
 
       const results = await Promise.all(promises);
+      
+      // Debug: log all result status codes
+      console.log('[test] Dispute creation results:', results.map(r => ({ status: r.status, error: r.json?.error })));
+      
       const successCount = results.filter(r => r.status === 201).length;
       const conflictCount = results.filter(r => r.status === 409).length;
+      const serverErrorCount = results.filter(r => r.status === 500).length;
+      
+      console.log(`[test] Success: ${successCount}, Conflicts: ${conflictCount}, Server errors: ${serverErrorCount}`);
+
+      if (successCount !== 1) {
+        console.log('[test] Expected exactly 1 success, got:', successCount);
+      }
+      if (conflictCount !== 3) {
+        console.log('[test] Expected exactly 3 conflicts, got:', conflictCount); 
+      }
 
       assert.equal(successCount, 1, 'Exactly one dispute should succeed');
       assert.equal(conflictCount, 3, 'Three disputes should conflict with DUPLICATE_DISPUTE');

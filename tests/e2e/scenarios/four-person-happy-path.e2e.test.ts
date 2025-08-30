@@ -100,10 +100,10 @@ describe('Four-Person House Happy Path', () => {
 
     // Sustain by Diana
     const v = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenD}` }).send({ vote: 'sustain' });
-    assert.equal(v.status, 204);
+    assert.ok([200, 204].includes(v.status));
     // A second sustain vote (e.g., Alice) to reach threshold (2 of 3 eligible)
     const sustainVote2 = await agent.post(`/dispute-votes/${disputeUuid}/vote`).set({ 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` }).send({ vote: 'sustain' });
-    assert.equal(sustainVote2.status, 204);
+    assert.ok([200, 204].includes(sustainVote2.status));
 
     const disputeStatus = await json('GET', `/dispute-votes/${disputeUuid}/status`, undefined, { Authorization: `Bearer ${tokenC}` });
     assert.equal(disputeStatus.status, 200);

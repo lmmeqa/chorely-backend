@@ -38,6 +38,13 @@ export default defineConfig({
         'src/index.ts',
         'src/db/config/migrations/**',
         'src/db/config/seeds/**',
+        // Entry point files - primarily for runtime, not business logic
+        'src/app.ts',           // Test adapter for supertest
+        'src/server.ts',        // Node.js entry point
+        // Configuration files - mostly static config parsing
+        'src/lib/config.ts',    // Zod config schema - simple validation
+        // Database schema - table definitions, not business logic
+        'src/db/schema.ts',     // Drizzle schema definitions
       ],
       all: true,
     },

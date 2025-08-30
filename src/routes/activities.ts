@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
-import { chores, disputes } from "../db/schema";
+import { chores, disputes, statusEvents } from "../db/schema";
 import { and, desc, eq, notInArray, gt, lte } from "drizzle-orm";
 import { createSignedUrlForPath, isStoragePath } from "../lib/uploads";
+import { listActivities } from '../repos/ActivitiesRepo';
 
 export const activitiesRoutes = new Hono();
 
@@ -28,7 +29,6 @@ async function withSignedPhoto(row: any, env?: any) {
 
 // GET /activities?homeId=...&timeFrame=1d|3d|7d|30d&fromTs=...&toTs=...
 activitiesRoutes.get("/activities", requireUser, async (c) => {
-  const db = dbFromEnv(c.env as any);
   const homeId = c.req.query("homeId");
   const timeFrame = c.req.query("timeFrame") || "3d";
   const fromTs = c.req.query("fromTs");
@@ -54,121 +54,106 @@ activitiesRoutes.get("/activities", requireUser, async (c) => {
       startDate = new Date(currentTime.getTime() - 3 * 24 * 60 * 60 * 1000);
   }
   
-  // Get chore IDs that have active disputes
-  const disputedChoreIds = await db
-    .select({ choreId: disputes.choreId })
-    .from(disputes)
-    .where(eq(disputes.status, "pending"));
-
-  const disputedIds = disputedChoreIds.map(d => d.choreId);
-
-  // Build where conditions
-  const conditions = [
-    eq(chores.homeId, homeId as any),
-    eq(chores.status, "complete"),
-    // Exclude chores that have active disputes
-    disputedIds.length > 0 ? notInArray(chores.uuid, disputedIds) : undefined
-  ].filter(Boolean);
-
-  // Add bounds filtering if provided
-  if (fromTs) {
-    conditions.push(gt(chores.updatedAt, new Date(Number(fromTs)))); // fromTs exclusive
-  }
-  if (toTs) {
-    conditions.push(lte(chores.updatedAt, new Date(Number(toTs)))); // toTs inclusive
-  }
-
-  const rows = await db
-    .select()
-    .from(chores)
-    .where(and(...conditions))
-    .orderBy(desc(chores.updatedAt), desc(chores.uuid)); // tie-break on uuid
-  
-  console.log(`[activities] Found ${rows.length} completed chores (no active disputes) for home ${homeId}`);
-  console.log(`[activities] Excluded ${disputedIds.length} chores with active disputes`);
-  console.log(`[activities] TimeFrame: ${timeFrame}, startDate: ${startDate.toISOString()}`);
-  
-  // Filter by timeFrame and convert to signed URLs
-  const filteredRows = rows.filter(r => r.completedAt && new Date(r.completedAt) >= startDate);
-  
-  // Sign photo URLs for each row
-  const signedRows = await Promise.all(
-    filteredRows.map(async (r) => await withSignedPhoto(r, c.env))
+  const choreRows = await listActivities(
+    homeId, 
+    fromTs ? new Date(Number(fromTs)) : undefined,
+    toTs ? new Date(Number(toTs)) : undefined,
+    c.env
   );
   
-  // --- map chores to activity items with numeric id ---
-  function uuidToNumericId(uuid: string): number {
-    // Use last 12 hex (48 bits) to stay within Number.MAX_SAFE_INTEGER
-    const hex = uuid.replace(/-/g, "");
-    const tail12 = hex.slice(-12);
-    const n = Number.parseInt(tail12, 16);
-    return Number.isFinite(n) ? n : 0;
+  // Get STATUS_CHANGED events for this home
+  const db = dbFromEnv(c.env as any);
+  let eventRows = [];
+  try {
+    // Build conditions for events (similar to listActivities)
+    const eventConditions = [eq(statusEvents.homeId, homeId)];
+    
+    // Add bounds filtering if provided (same logic as listActivities)
+    if (fromTs) {
+      eventConditions.push(gt(statusEvents.ts, new Date(Number(fromTs)))); // fromTs exclusive
+    }
+    if (toTs) {
+      eventConditions.push(lte(statusEvents.ts, new Date(Number(toTs)))); // toTs inclusive
+    }
+    
+    eventRows = await db
+      .select()
+      .from(statusEvents)
+      .where(and(...eventConditions))
+      .orderBy(desc(statusEvents.ts), desc(statusEvents.uuid));
+  } catch (e) {
+    console.error('[activities] Error fetching status events:', e);
+    // Fall back to empty array if statusEvents table doesn't exist
+    eventRows = [];
   }
+  
+  console.log(`[activities] Found ${choreRows.length} completed chores, ${eventRows.length} status events for home ${homeId}`);
+  console.log(`[activities] TimeFrame: ${timeFrame}, startDate: ${startDate.toISOString()}`);
+  
+  // Filter chores by timeFrame and convert to signed URLs
+  const filteredChoreRows = choreRows.filter(r => r.completedAt && new Date(r.completedAt) >= startDate);
+  
+  // Filter events by timeFrame  
+  const filteredEventRows = eventRows.filter(r => r.ts && new Date(r.ts) >= startDate);
+  
+  // Sign photo URLs for chore rows
+  const signedChoreRows = await Promise.all(
+    filteredChoreRows.map(async (r) => await withSignedPhoto(r, c.env))
+  );
+  
 
-  const out = signedRows.map((r) => {
-    const ts = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
-    return {
-      // numeric id for tie-break
-      id: uuidToNumericId(r.uuid),
-      ts,
-      uuid: r.uuid,
-      name: r.name,
-      description: r.description,
-      time: r.time,
-      icon: r.icon,
-      status: r.status,
-      user_email: r.userEmail,
-      homeID: r.homeId,
-      points: r.points,
-      completed_at: r.completedAt,
-      claimed_at: r.claimedAt,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-      photo_url: r.photoUrl,
-      todos: [],
-      approvalList: [],
-    };
+  // Combine chores and events
+  const choreActivities = signedChoreRows.map((r) => ({
+    uuid: r.uuid,
+    ts: r.updatedAt ? new Date(r.updatedAt).getTime() : 0,
+    name: r.name,
+    description: r.description,
+    time: r.time,
+    icon: r.icon,
+    status: r.status,
+    user_email: r.userEmail,
+    homeID: r.homeId,
+    points: r.points,
+    completed_at: r.completedAt,
+    claimed_at: r.claimedAt,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    photo_url: r.photoUrl,
+    todos: [],
+    approvalList: [],
+    activityType: 'chore',
+  }));
+
+  const eventActivities = filteredEventRows.map((e) => ({
+    id: e.uuid,
+    uuid: e.uuid,
+    ts: e.ts ? new Date(e.ts).getTime() : 0,
+    type: e.type,
+    newStatus: e.newStatus?.toUpperCase(),
+    actor: { email: e.actorEmail },
+    actorEmail: e.actorEmail,
+    choreUuid: e.choreUuid,
+    homeId: e.homeId,
+    homeID: e.homeId,
+    activityType: 'event',
+    // Add timestamp fields for consistent sorting
+    updatedAt: e.ts,
+    createdAt: e.ts,
+  }));
+
+  const out = [...choreActivities, ...eventActivities].sort((a, b) => {
+    // Primary sort: timestamp descending
+    if (b.ts !== a.ts) return b.ts - a.ts;
+    
+    // Tie-breaker: UUID descending  
+    const aId = String(a.uuid || '');
+    const bId = String(b.uuid || '');
+    return bId > aId ? 1 : bId < aId ? -1 : 0;
   });
 
   console.log(`[activities] Returning ${out.length} activities after timeFrame filtering`);
 
-  // --- lightweight STATUS_CHANGED events (numeric id too) ---
-  const now = Date.now();
-  const recent = rows.filter((r) => {
-    const updatedTime = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
-    return updatedTime >= now - 10_000;
-  });
-
-  const statusEvents = recent.map((r, i) => ({
-    // STATUS_CHANGED events need string IDs as expected by tests
-    id: `ev-${r.uuid}`,
-    ts: r.updatedAt ? new Date(r.updatedAt).getTime() : 0,
-    type: "STATUS_CHANGED",
-    actor: { email: r.userEmail ?? "system" },
-    homeId: r.homeId,
-    choreUuid: r.uuid,
-    newStatus: r.status === 'unclaimed' ? 'UNCLAIMED' : 
-               r.status === 'claimed' ? 'CLAIMED' : 
-               r.status === 'complete' ? 'COMPLETED' : 
-               r.status.toUpperCase(), // Map to expected values
-  }));
-
-  // --- final, authoritative sort (ts desc, id desc) ---
-  const items = [...statusEvents, ...out].sort((a, b) => {
-    const byTs = (b.ts || 0) - (a.ts || 0);
-    if (byTs !== 0) return byTs;
-    // Handle mixed ID types: string IDs for events, numeric IDs for chores
-    if (typeof a.id === 'string' && typeof b.id === 'string') {
-      return b.id.localeCompare(a.id);
-    }
-    if (typeof a.id === 'number' && typeof b.id === 'number') {
-      return (b.id || 0) - (a.id || 0);
-    }
-    // String IDs sort before numeric IDs for same timestamp
-    return typeof a.id === 'string' ? -1 : 1;
-  });
-
-  return c.json(items, 200);
+  return c.json(out, 200);
 });
 
 

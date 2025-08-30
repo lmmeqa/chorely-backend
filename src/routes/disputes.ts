@@ -2,155 +2,78 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { dbFromEnv } from '../lib/db';
 import { requireUser } from '../lib/auth';
-import { disputes, disputeVotes, chores, userHomes } from '../db/schema';
+import { disputes, disputeVotes, chores, userHomes, homes, statusEvents } from '../db/schema';
 import { eq, desc, and, count } from 'drizzle-orm';
 import { uploadToStorageReturnPath, createSignedUrlForPath, isStoragePath } from '../lib/uploads';
+import { requireUuidParam, ensureFound } from '../middleware/validators';
+import { DisputeCreate, parseDisputeCreate } from '../schemas/disputes';
+import { isUuidLoose } from '../http/validators';
+import * as crypto from 'crypto';
 
 export const disputesRoutes = new Hono();
 
-const createDisputeSchema = z.object({
-  choreId: z.string().uuid(),
-  reason: z.union([z.string(), z.number(), z.null(), z.undefined()])
-    .transform(val => String(val || ''))
-    .pipe(z.string().min(1).max(1000))
-    .transform(val => {
-      // Basic XSS sanitization
-      return val.replace(/<script[^>]*>.*?<\/script>/gi, '')
-                .replace(/<[^>]+>/g, '') // Strip HTML tags
-                .trim();
-    }),
-  imageUrl: z.string().url().optional(),
-}).strict();
+
 
 // POST /disputes → 201
 disputesRoutes.post('/disputes', requireUser, async (c) => {
+  console.log('[disputes] POST /disputes start, user:', (c as any).get('user')?.email);
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get('user') as { email?: string } | null;
   if (!u?.email) return c.json({ error: 'Unauthorized' }, 401);
 
-  const ct = (c.req.header('content-type') || '').toLowerCase();
-  let payload: { choreId?: string; reason?: string; imageUrl?: string } = { choreId: '', reason: '' };
-  let uploadedPath: string | undefined;
+  // Validate input FIRST (before any DB operations)
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = parseDisputeCreate(body);
+  if ('error' in parsed) return c.json({ error: parsed.error }, parsed.status as any);
 
-  if (ct.includes('multipart/form-data')) {
-    console.log('[dispute create] Processing multipart form data');
-    const form: any = await c.req.parseBody().catch(() => ({}));
-    console.log('[dispute create] Parsed form keys:', Object.keys(form || {}));
-    console.log('[dispute create] Form choreId:', form?.choreId);
-    console.log('[dispute create] Form reason:', form?.reason);
-    payload.choreId = String(form?.choreId || '');
-    payload.reason = String(form?.reason || '');
-    const image: File | undefined = (form as any)?.image;
-    if (image && (image as any).size > 0) {
-      try {
-        uploadedPath = await uploadToStorageReturnPath(image, {
-          prefix: `proofs/disputes/${payload.choreId}`,
-          filename: (image as any).name || 'photo.jpg',
-          contentType: (image as any).type || 'image/jpeg',
-        });
-      } catch (e: any) {
-        console.error('[dispute create] image upload failed:', e?.message || e);
-      }
-    }
-  } else {
-    console.log('[dispute create] Processing JSON data');
-    const body = await c.req.json().catch(() => ({}));
-    console.log('[dispute create] JSON body:', body);
-    
-    // Handle base64 image format (same as chore completion)
-    if (body.image && body.image.data) {
-      console.log('[dispute create] Processing base64 image data');
-      console.log('[dispute create] Base64 data length:', body.image.data.length, 'chars');
-      
-      try {
-        // Decode base64 to binary
-        const binaryString = atob(body.image.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        console.log('[dispute create] Decoded binary data - size:', bytes.length, 'bytes');
-        
-        // Check if it's a valid JPEG
-        const firstBytes = bytes.slice(0, 20);
-        console.log('[dispute create] First 20 bytes (hex):', Array.from(firstBytes).map(b => b.toString(16).padStart(2, '0')).join(''));
-        console.log('[dispute create] Starts with JPEG marker:', firstBytes[0] === 0xFF && firstBytes[1] === 0xD8);
-        
-        // Upload to storage
-        uploadedPath = await uploadToStorageReturnPath(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), {
-          prefix: `proofs/disputes/${body.choreId}`,
-          filename: body.image.filename || 'dispute.jpg',
-          contentType: body.image.contentType || 'image/jpeg',
-        });
-        console.log('[dispute create] Base64 image uploaded successfully to:', uploadedPath);
-      } catch (e: any) {
-        console.error('[dispute create] base64 image upload failed:', e?.message || e);
-      }
-    }
-    
-    // Extract basic fields
-    payload.choreId = body.choreId || '';
-    payload.reason = body.reason || '';
-    payload.imageUrl = body.imageUrl;
-  }
+  const { choreId, reason } = parsed;
 
-  console.log('[dispute create] Final payload:', payload);
-  
-  // Validate payload using schema
-  try {
-    const validatedPayload = createDisputeSchema.parse(payload);
-    payload = validatedPayload;
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json({ error: 'Validation failed', details: error.errors }, 422);
-    }
-    return c.json({ error: 'Invalid request body' }, 400);
-  }
+  // Find chore and home
+  const chore = await db.select().from(chores).where(eq(chores.uuid, choreId)).limit(1);
+  const row = chore[0];
+  if (!row) return c.json({ error: 'chore not found' }, 404);
 
-  // Ensure chore exists + user is a member of the chore's home
-  const [chore] = await db.select().from(chores).where(eq(chores.uuid, payload.choreId)).limit(1);
-  if (!chore) return c.json({ error: 'Chore not found' }, 404);
-
+  // Membership check
   const [m] = await db
     .select({ userEmail: userHomes.userEmail })
     .from(userHomes)
-    .where(and(eq(userHomes.homeId, chore.homeId), eq(userHomes.userEmail, u.email as string)))
+    .where(and(eq(userHomes.homeId, row.homeId), eq(userHomes.userEmail, u.email as string)))
     .limit(1);
-  if (!m) return c.json({ error: 'Forbidden: not a member of this home' }, 403);
+  if (!m) return c.json({ error: 'forbidden' }, 403);
 
-  // Rely on database unique constraint for race-condition-safe dispute creation
+  // Create dispute - let database constraint handle duplicates atomically
   try {
-    const [row] = await db
-      .insert(disputes)
-      .values({
-        choreId: payload.choreId,
-        disputerEmail: u.email!,
-        reason: payload.reason,
-        imageUrl: uploadedPath || payload.imageUrl || null, // store path if we uploaded, else external URL
-        status: 'pending',
+    console.log('[disputes] About to insert dispute for chore:', choreId, 'user:', u.email);
+    const created = await db.insert(disputes)
+      .values({ 
+        choreId: choreId, 
+        disputerEmail: u.email, 
+        reason
       })
       .returning();
-    console.log('[dispute create] Successfully created dispute:', row.uuid);
-    return c.json(row, 201);
-  } catch (e: any) {
-    console.error('[dispute create] Database error caught:', e);
+    console.log('[disputes] Insert successful:', created[0].uuid);
+    return c.json(created[0], 201);
+  } catch (err: any) {
+    console.log('[disputes] Insert error caught:', {
+      code: err?.code,
+      constraint: err?.constraint,
+      message: err?.message,
+      sqlState: err?.sqlState,
+      detail: err?.detail,
+      cause: err?.cause?.code || err?.cause?.constraint
+    });
     
-    // Check for unique constraint violations (Drizzle wraps PostgreSQL errors in cause)
-    const pgError = e.cause || e;
+    // Check for PostgreSQL unique constraint violation (23505)
+    const isConstraintViolation = err?.code === '23505' || 
+                                 err?.cause?.code === '23505' ||
+                                 err?.message?.includes('unique constraint') ||
+                                 err?.message?.includes('idx_disputes_open_unique');
     
-    if (
-      pgError?.code === '23505' || 
-      pgError?.constraint === 'idx_disputes_open_unique' ||
-      e.message?.includes('duplicate key') || 
-      e.message?.includes('unique constraint')
-    ) {
-      console.log('[dispute create] Detected unique constraint violation, returning 409');
+    if (isConstraintViolation) {
+      console.log('[disputes] Constraint violation detected - returning 409');
       return c.json({ error: 'DUPLICATE_DISPUTE' }, 409);
     }
-    
-    console.error('[dispute create] Unexpected database error:', e);
-    throw e;
+    throw err;
   }
 });
 
@@ -250,21 +173,26 @@ async function withSignedDispute(row: any, env?: any) {
   return row;
 }
 
-// GET /disputes?homeId=...&status=pending → 200, 400 if missing
+// GET /disputes?homeId=...&status=pending → 200, 400 if missing  
 disputesRoutes.get('/disputes', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get('user') as { email?: string } | null;
+  
   const homeId = c.req.query('homeId');
   const status = c.req.query('status'); // Optional status filter
+  
   if (!homeId) return c.json({ error: 'homeId required' }, 400);
+  if (!isUuidLoose(homeId)) return c.json({ error: 'malformed homeId' }, 400);
 
-  // Membership guard
-  const [m] = await db
+  const home = await db.select().from(homes).where(eq(homes.id, homeId)).limit(1);
+  if (!home[0]) return c.json({ error: 'home not found' }, 404);
+
+  const isMember = await db
     .select({ userEmail: userHomes.userEmail })
     .from(userHomes)
     .where(and(eq(userHomes.homeId, homeId), eq(userHomes.userEmail, (u?.email || '') as string)))
     .limit(1);
-  if (!m) return c.json({ error: 'Forbidden: not a member of this home' }, 403);
+  if (!isMember[0]) return c.json({ error: 'forbidden' }, 403);
 
   // Build where condition - filter by home and optionally by status
   const whereConditions = [eq(chores.homeId, homeId)];
@@ -303,9 +231,28 @@ disputesRoutes.get('/disputes', requireUser, async (c) => {
 // GET /disputes/:uuid → 200
 disputesRoutes.get('/disputes/:uuid', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
-  const { uuid } = c.req.param();
-  const [row] = await db.select().from(disputes).where(eq(disputes.uuid, uuid)).limit(1);
-  if (!row) return c.json({ error: 'not found' }, 404);
+  const u = (c as any).get('user') as { email?: string } | null;
+  
+  const id = c.req.param('uuid');
+  if (!isUuidLoose(id)) {
+    return c.json({ error: 'uuid must be UUID' }, 400);
+  }
+  
+  const [row] = await db.select().from(disputes).where(eq(disputes.uuid, id)).limit(1);
+  if (!row) return c.json({ error: 'dispute not found' }, 404);
+
+  // Get the chore to check home membership
+  const [chore] = await db.select().from(chores).where(eq(chores.uuid, row.choreId)).limit(1);
+  if (!chore) return c.json({ error: 'chore not found' }, 404);
+
+  // Membership check
+  const [m] = await db
+    .select({ userEmail: userHomes.userEmail })
+    .from(userHomes)
+    .where(and(eq(userHomes.homeId, chore.homeId), eq(userHomes.userEmail, (u?.email || '') as string)))
+    .limit(1);
+  if (!m) return c.json({ error: 'forbidden' }, 403);
+
   const signed = await withSignedDispute(row, c.env);
   return c.json(signed);
 });
@@ -314,20 +261,21 @@ disputesRoutes.get('/disputes/:uuid', requireUser, async (c) => {
 disputesRoutes.patch('/disputes/:uuid/sustain', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
+  const user = (c as any).get('user') as { email?: string };
   
   // Get the dispute and associated chore
   const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, uuid)).limit(1);
   if (!dispute) return c.json({ error: 'not found' }, 404);
+  if (dispute.status !== 'pending') return c.json({ error: 'dispute already closed' }, 409);
   
   const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute.choreId)).limit(1);
   if (!chore) return c.json({ error: 'chore not found' }, 404);
   
   // Update dispute status to sustained
-  const [row] = await db
+  await db
     .update(disputes)
     .set({ status: 'sustained', updatedAt: new Date() as any })
-    .where(eq(disputes.uuid, uuid))
-    .returning();
+    .where(eq(disputes.uuid, uuid));
   
   // If chore is completed, revert it back to claimed and deduct points
   if (chore.status === 'complete' && chore.userEmail) {
@@ -337,6 +285,17 @@ disputesRoutes.patch('/disputes/:uuid/sustain', requireUser, async (c) => {
         .update(chores)
         .set({ status: 'claimed', completedAt: null, updatedAt: new Date() as any })
         .where(eq(chores.uuid, dispute.choreId));
+      
+      // Emit STATUS_CHANGED event for sustain → revert to claimed
+      await db.insert(statusEvents).values({
+        uuid: crypto.randomUUID(),
+        homeId: chore.homeId,
+        choreUuid: dispute.choreId,
+        type: 'STATUS_CHANGED',
+        newStatus: 'claimed',
+        actorEmail: user.email!,
+        ts: new Date(),
+      });
       
       // Deduct points from the user
       const pointsToDeduct = chore.points;
@@ -364,11 +323,32 @@ disputesRoutes.patch('/disputes/:uuid/sustain', requireUser, async (c) => {
 disputesRoutes.patch('/disputes/:uuid/overrule', requireUser, async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
-  const [row] = await db
+  const user = (c as any).get('user') as { email?: string };
+  
+  // Get the dispute and associated chore
+  const [dispute] = await db.select().from(disputes).where(eq(disputes.uuid, uuid)).limit(1);
+  if (!dispute) return c.json({ error: 'not found' }, 404);
+  if (dispute.status !== 'pending') return c.json({ error: 'dispute already closed' }, 409);
+  
+  const [chore] = await db.select().from(chores).where(eq(chores.uuid, dispute.choreId)).limit(1);
+  if (!chore) return c.json({ error: 'chore not found' }, 404);
+  
+  // Update dispute status to overruled
+  await db
     .update(disputes)
     .set({ status: 'overruled', updatedAt: new Date() as any })
-    .where(eq(disputes.uuid, uuid))
-    .returning();
-  if (!row) return c.json({ error: 'not found' }, 404);
+    .where(eq(disputes.uuid, uuid));
+  
+  // Emit STATUS_CHANGED event for overrule → keep complete
+  await db.insert(statusEvents).values({
+    uuid: crypto.randomUUID(),
+    homeId: chore.homeId,
+    choreUuid: dispute.choreId,
+    type: 'STATUS_CHANGED',
+    newStatus: 'complete',
+    actorEmail: user.email!,
+    ts: new Date(),
+  });
+  
   return c.body(null, 204);
 });

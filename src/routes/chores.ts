@@ -4,10 +4,13 @@ import { z } from "zod";
 import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByParam, requireHomeMemberByChoreUuid } from "../lib/authorization";
-import { chores, todoItems, userHomes } from "../db/schema";
+import { chores, todoItems, userHomes, statusEvents } from "../db/schema";
 import { and, count, desc, eq } from "drizzle-orm";
 import { uploadToStorageReturnPath, createSignedUrlForPath, isStoragePath } from "../lib/uploads";
 import { sanitize } from "../lib/sanitize";
+import { requireUuidParam, ensureFound } from "../middleware/validators";
+import { validateImageBase64 } from "../services/uploads/validateImage";
+import * as crypto from "crypto";
 
 export const choresRoutes = new Hono();
 
@@ -150,18 +153,12 @@ choresRoutes.get("/chores/user", requireUser, async (c) => {
 // ──────────────────────────────────────────────────────────────────────────────
 // GET /chores/:uuid → 200 or 404
 // ──────────────────────────────────────────────────────────────────────────────
-choresRoutes.get("/chores/:uuid", requireUser, async (c) => {
+choresRoutes.get("/chores/:uuid", requireUser, requireUuidParam("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
   
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(uuid)) {
-    return c.json({ error: "Invalid UUID format" }, 400);
-  }
-  
   const [row] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
-  if (!row) return c.json({ error: "not found" }, 404);
+  ensureFound(row, "chore");
   const signed = await withSignedPhoto(row, c.env);
   return c.json(signed);
 });
@@ -199,12 +196,25 @@ choresRoutes.get("/chores/count/:homeId", requireUser, requireHomeMemberByParam(
 choresRoutes.patch("/chores/:uuid/approve", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
+  const user = (c as any).get("user") as { email?: string };
 
   const [row] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
   if (!row) return c.json({ error: "not found" }, 404);
   if (row.status !== "unapproved") return c.json({ error: "not unapproved" }, 409);
 
   await db.update(chores).set({ status: "unclaimed", updatedAt: new Date() }).where(eq(chores.uuid, uuid));
+  
+  // Emit STATUS_CHANGED event
+  await db.insert(statusEvents).values({
+    uuid: crypto.randomUUID(),
+    homeId: row.homeId,
+    choreUuid: row.uuid,
+    type: 'STATUS_CHANGED',
+    newStatus: 'approved',
+    actorEmail: user.email!,
+    ts: new Date(),
+  });
+  
   return c.body(null, 204);
 });
 
@@ -239,6 +249,22 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, requireHomeMemberByCho
   const u = (c as any).get("user") as { email?: string };
   if (!u?.email) return c.json({ error: "Unauthorized" }, 401);
 
+  // Parse body for upload validation
+  let jsonBody: any = null;
+  try {
+    const bodyText = await c.req.text();
+    const ct = (c.req.header("content-type") || "").toLowerCase();
+    if (bodyText && ct.includes("application/json")) {
+      jsonBody = JSON.parse(bodyText);
+    }
+  } catch (e) {
+    // Ignore parsing errors, will be handled later
+  }
+
+  // Validate upload first (before any state checks)
+  const v = validateImageBase64(jsonBody?.image);
+  if (!v.ok) return c.json({ error: (v as any).message }, (v as any).status);
+
   const res2 = await db
     .update(chores)
     .set({ status: "complete", completedAt: new Date(), updatedAt: new Date() })
@@ -254,16 +280,9 @@ choresRoutes.patch("/chores/:uuid/complete", requireUser, requireHomeMemberByCho
   let uploadedPath: string | null = null;
   console.log(`[chore complete] Content-Type: ${ct}`);
   
-  // Try to parse JSON body first for base64 image data
-  let jsonBody: any = null;
-  try {
-    const bodyText = await c.req.text();
-    if (bodyText && ct.includes("application/json")) {
-      jsonBody = JSON.parse(bodyText);
-      console.log(`[chore complete] Parsed JSON body with keys: ${Object.keys(jsonBody).join(', ')}`);
-    }
-  } catch (e) {
-    console.log(`[chore complete] No valid JSON body found`);
+  // Use the already parsed jsonBody from validation
+  if (jsonBody) {
+    console.log(`[chore complete] Using parsed JSON body with keys: ${Object.keys(jsonBody).join(', ')}`);
   }
   
   if (jsonBody?.image?.data) {

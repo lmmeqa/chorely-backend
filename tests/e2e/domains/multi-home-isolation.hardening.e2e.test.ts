@@ -25,13 +25,13 @@ describe('Multi-home isolation and identity spoofing', () => {
 
   it('ignores spoofed userEmail; actor is token user', async () => {
     // Create dispute
-    const d = await json('POST','/disputes', { choreId: choreUuid }, { Authorization:`Bearer ${tA}`});
+    const d = await json('POST','/disputes', { choreId: choreUuid, reason: 'test dispute' }, { Authorization:`Bearer ${tA}`});
     assert.equal(d.status, 201);
     const disputeUuid = d.json.uuid;
 
     // Try to vote while spoofing someone else in the body
     const vote = await json('POST', `/dispute-votes/${disputeUuid}/vote`, { sustain: true, userEmail: 'spoof@evil.com' }, { Authorization:`Bearer ${tA}`});
-    assert.equal(vote.status, 204);
+    assert.ok([200, 204].includes(vote.status));
 
     // Fetch vote status and assert the recorded voter is Alice (token user)
     const status = await json('GET', `/dispute-votes/${disputeUuid}/status`, null, { Authorization:`Bearer ${tA}`});

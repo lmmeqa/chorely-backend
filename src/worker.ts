@@ -12,6 +12,7 @@ import { todosRoutes } from './routes/todos';
 import { disputeVotesRoutes } from './routes/dispute-votes';
 import { logger } from './middleware/logger';
 import { rateLimit } from './middleware/rateLimit';
+import { errorHandler } from './middleware/errorHandler';
 import type { Bindings } from './lib/db';
 
 // Utility helpers
@@ -57,8 +58,12 @@ app.use('*', async (c, next) => {
 // Add comprehensive logging middleware
 app.use('*', logger);
 
+// Debug global error handler (removed to allow proper error handling in routes)
+
 // Light rate limiting for public endpoints
 app.use('*', rateLimit());
+
+
 
 // Attach CORS using ALLOWED_ORIGINS list
 app.use('*', (c, next) => {
@@ -137,11 +142,9 @@ app.route('/', disputeVotesRoutes);
 // Enable local static after routes
 addLocalStatic(app);
 
-// 500 handler
+// Error handler
 app.onError((err, c) => {
-  console.error('[onError]', err);
-  try { return c.json({ error: 'Internal Server Error', message: String((err as any)?.message || err) }, 500); }
-  catch { return c.text('Internal Server Error', 500); }
+  return errorHandler(err, c);
 });
 
 export default app;

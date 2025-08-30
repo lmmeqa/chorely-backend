@@ -49,8 +49,10 @@ describe('Activities ordering & bounds E2E', () => {
       for (let i = 1; i < r.json.length; i++) {
         const prev = tsOf(r.json[i-1]);
         const cur = tsOf(r.json[i]);
-        assert.ok(prev > cur || (prev === cur && r.json[i-1].id > r.json[i].id), 
-          'reverse-chron with id desc tie-break');
+        const prevUuid = String(r.json[i-1].uuid ?? (r.json[i-1].id || '').replace(/^ev-/, ''));
+        const curUuid  = String(r.json[i].uuid   ?? (r.json[i].id  || '').replace(/^ev-/, ''));
+        assert.ok(prev > cur || (prev === cur && prevUuid > curUuid), 
+          'reverse-chron with uuid desc tie-break');
       }
     });
   }
@@ -71,6 +73,9 @@ describe('Activities ordering & bounds E2E', () => {
     const mid = Date.now();
     const left = await json('GET', `/activities?homeId=${homeId}&toTs=${mid}`, undefined, { Authorization: `Bearer ${tokens[alice.email]}` }); // includes <= mid
     const right = await json('GET', `/activities?homeId=${homeId}&fromTs=${mid}`, undefined, { Authorization: `Bearer ${tokens[alice.email]}` }); // excludes mid
+    
+    console.log('left response:', { status: left.status, error: left.json?.error });
+    console.log('right response:', { status: right.status, error: right.json?.error });
     
     assert.equal(left.status, 200);
     assert.equal(right.status, 200);

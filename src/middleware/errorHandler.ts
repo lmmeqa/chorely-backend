@@ -41,6 +41,12 @@ export const errorHandler = (
   if (err instanceof Error) {
     const code = (err as DatabaseError | { code?: string }).code;
     const detail = (err as DatabaseError | { detail?: string }).detail;
+    const constraint = (err as DatabaseError | { constraint?: string }).constraint;
+    
+    // Debug constraint violations
+    if (code === '23505') {
+      console.log('[errorHandler] Constraint violation:', { code, constraint, detail });
+    }
     
     // Extract field and value from Postgres error detail
     const match = detail?.match(/Key \((.*?)\)=\((.*?)\)/);
@@ -49,6 +55,21 @@ export const errorHandler = (
 
     switch (code) {
       case "23505": // unique_violation
+        // Special handling for dispute unique constraint 
+        if (constraint === 'idx_disputes_open_unique') {
+          console.log('[errorHandler] Returning DUPLICATE_DISPUTE error');
+          if (isHono && c) {
+            return c.json({
+              error: "DUPLICATE_DISPUTE"
+            }, 409);
+          } else if (resObj) {
+            return resObj.status(409).json({
+              error: "DUPLICATE_DISPUTE"
+            });
+          }
+        }
+        
+        // Default unique violation handling
         if (isHono && c) {
           return c.json({
             error: `A record with ${field} '${value}' already exists`,

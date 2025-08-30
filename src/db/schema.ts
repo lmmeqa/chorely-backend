@@ -108,3 +108,17 @@ export const disputeVotes = pgTable("dispute_votes", {
   disputeUuidIdx: index("idx_dispute_votes_dispute_uuid").on(table.disputeUuid),
   userEmailIdx: index("idx_dispute_votes_user_email").on(table.userEmail),
 }));
+
+export const statusEvents = pgTable("status_events", {
+  uuid: uuid("uuid").primaryKey().defaultRandom(),
+  homeId: uuid("home_id").notNull().references(() => homes.id, { onDelete: "cascade" }),
+  choreUuid: uuid("chore_uuid").notNull().references(() => chores.uuid, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  newStatus: text("new_status").notNull(),
+  actorEmail: text("actor_email").notNull().references(() => users.email, { onDelete: "cascade" }),
+  ts: timestamp("ts", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  homeIdIdx: index("idx_status_events_home_id").on(table.homeId),
+  tsUuidIdx: index("idx_status_events_ts_uuid").on(table.ts, table.uuid),
+  typeIdx: index("idx_status_events_type").on(table.type),
+}));

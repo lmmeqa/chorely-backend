@@ -30,6 +30,7 @@ export async function requireUser(c: Context, next: Next) {
   const strict = bool(process.env.STRICT_AUTH ?? env.STRICT_AUTH);
   const supabaseUrl = (process.env.SUPABASE_URL ?? env.SUPABASE_URL) as string | undefined;
   const supabaseJwtSecret = (process.env.SUPABASE_JWT_SECRET ?? env.SUPABASE_JWT_SECRET) as string | undefined;
+  
 
   try {
     let payload: JWTPayload;
@@ -56,7 +57,8 @@ export async function requireUser(c: Context, next: Next) {
   } catch (err: any) {
     if ((process.env?.VITEST_SHOW_LOGS === "true") || (env.VITEST_SHOW_LOGS === "true")) {
       // eslint-disable-next-line no-console
-      console.error("[auth] jwtVerify failed:", err?.message ?? err);
+      console.error("[auth] jwtVerify failed:", err?.message ?? err, 'Error code:', err.code);
+      console.error("[auth] Strict mode:", strict, 'Using JWT secret:', !!supabaseJwtSecret);
     }
     return c.text("Invalid token", 401);
   }

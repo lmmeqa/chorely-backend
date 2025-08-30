@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
 
-const tokenCache = new Map<string, string>();
+const tokenCache = new Map<string, { token: string, expiry: number }>();
+
+export function clearTokenCache() {
+  tokenCache.clear();
+}
+
+function isTokenExpired(tokenData: { token: string, expiry: number }): boolean {
+  return Date.now() >= tokenData.expiry;
+}
 
 export async function supabaseSignupOrLogin(email: string, password: string): Promise<string> {
-  if (tokenCache.has(email)) return tokenCache.get(email)!;
+  const cached = tokenCache.get(email);
+  if (cached && !isTokenExpired(cached)) return cached.token;
   const url = (process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').replace(/\/$/, '');
   const anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
   assert.ok(url && anon, 'Supabase URL and anon key required');
@@ -21,7 +30,9 @@ export async function supabaseSignupOrLogin(email: string, password: string): Pr
     const sText = await signup.text();
     try { sjson = JSON.parse(sText); } catch { sjson = {}; }
     if (sjson.access_token) {
-      tokenCache.set(email, sjson.access_token as string);
+      // Cache token with 50-minute expiry (tokens typically last 1 hour)
+      const expiry = Date.now() + 50 * 60 * 1000;
+      tokenCache.set(email, { token: sjson.access_token as string, expiry });
       return sjson.access_token as string;
     }
     if (process.env.VERBOSE_TEST_LOGS === 'true') {
@@ -45,7 +56,9 @@ export async function supabaseSignupOrLogin(email: string, password: string): Pr
     let ljson: any = {};
     try { ljson = JSON.parse(lText); } catch { ljson = {}; }
     if (ljson.access_token) {
-      tokenCache.set(email, ljson.access_token as string);
+      // Cache token with 50-minute expiry (tokens typically last 1 hour)
+      const expiry = Date.now() + 50 * 60 * 1000;
+      tokenCache.set(email, { token: ljson.access_token as string, expiry });
       return ljson.access_token as string;
     }
     const retryAfter = login.headers.get('retry-after');

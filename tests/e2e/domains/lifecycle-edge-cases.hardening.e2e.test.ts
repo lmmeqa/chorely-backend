@@ -24,7 +24,7 @@ describe('Dispute lifecycle edge cases', () => {
     const chore = await createChore(homeId, tokens['pending1@example.com'], { points: 3 });
     await approveClaimThenComplete(chore.uuid, tokens['pending1@example.com'], jpegB64());
 
-    const before = (await json('GET', `/points/${homeId}/pending1@example.com`)).json.points;
+    const before = (await json('GET', `/points/${homeId}/pending1@example.com`, undefined, { Authorization: `Bearer ${tokens['pending1@example.com']}` })).json.points;
 
     // Open a dispute
     const d = await json('POST','/disputes', { choreId: chore.uuid, reason:'pending-complete-test' }, { Authorization:`Bearer ${tokens['pending2@example.com']}`});
@@ -36,7 +36,7 @@ describe('Dispute lifecycle edge cases', () => {
     }, { Authorization:`Bearer ${tokens['pending1@example.com']}`});
     assert.ok([204,409].includes(retry.status));
 
-    const after = (await json('GET', `/points/${homeId}/pending1@example.com`)).json.points;
+    const after = (await json('GET', `/points/${homeId}/pending1@example.com`, undefined, { Authorization: `Bearer ${tokens['pending1@example.com']}` })).json.points;
     // Points should not increase (no double award)
     assert.equal(after, before);
   });

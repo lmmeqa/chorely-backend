@@ -3,8 +3,10 @@ import { z } from "zod";
 import { dbFromEnv } from "../lib/db";
 import { requireUser } from "../lib/auth";
 import { requireHomeMemberByChoreUuid } from "../lib/authorization";
-import { choreApprovals, chores, userHomes } from "../db/schema";
+import { choreApprovals, chores, userHomes, statusEvents } from "../db/schema";
 import { and, count, eq, inArray } from "drizzle-orm";
+import { requireUuidParam, ensureFound } from "../middleware/validators";
+import * as crypto from "crypto";
 
 export const approvalsRoutes = new Hono();
 
@@ -18,11 +20,11 @@ function calcRequired(totalUsers: number): number {
 }
 
 // GET /approvals/:uuid — return { status, votes, required, voters[]?, total_users? }
-approvalsRoutes.get("/approvals/:uuid", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
+approvalsRoutes.get("/approvals/:uuid", requireUser, requireUuidParam("uuid"), requireHomeMemberByChoreUuid("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const { uuid } = c.req.param();
   const [chore] = await db.select().from(chores).where(eq(chores.uuid, uuid));
-  if (!chore) return c.json({ error: "not found" }, 404);
+  ensureFound(chore, "chore");
 
   const voters = await db
     .select({ userEmail: choreApprovals.userEmail })
@@ -45,16 +47,10 @@ approvalsRoutes.get("/approvals/:uuid", requireUser, requireHomeMemberByChoreUui
 });
 
 // POST /approvals/:uuid/vote { userEmail?, approved? }
-approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByChoreUuid("uuid"), async (c) => {
+approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireUuidParam("uuid"), requireHomeMemberByChoreUuid("uuid"), async (c) => {
   const db = dbFromEnv(c.env as any);
   const u = (c as any).get("user") as { email?: string };
   const { uuid } = c.req.param();
-  
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(uuid)) {
-    return c.json({ error: "Invalid UUID format" }, 400);
-  }
   
   const body = await c.req.json().catch(() => ({}));
   
@@ -73,7 +69,7 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
 
   // Check if chore exists and is in correct state for voting
   const [chore] = await db.select().from(chores).where(eq(chores.uuid, uuid)).limit(1);
-  if (!chore) return c.json({ error: "chore not found" }, 404);
+  ensureFound(chore, "chore");
   
   // Only allow voting on unapproved chores
   if (chore.status !== "unapproved") {
@@ -99,6 +95,21 @@ approvalsRoutes.post("/approvals/:uuid/vote", requireUser, requireHomeMemberByCh
   
   if (voters.length >= required) {
     await db.update(chores).set({ status: "unclaimed", updatedAt: new Date() }).where(eq(chores.uuid, uuid));
+    
+    // Emit STATUS_CHANGED event (with error handling)
+    try {
+      await db.insert(statusEvents).values({
+        homeId: chore.homeId,
+        choreUuid: chore.uuid,
+        type: 'STATUS_CHANGED',
+        newStatus: 'unclaimed',
+        actorEmail: email,
+        ts: new Date(),
+      });
+    } catch (e) {
+      console.error('[approvals] Failed to emit STATUS_CHANGED event:', e);
+      // Don't fail the main operation if event logging fails
+    }
   }
 
   // Return payload matching expectApprovalVotePayload contract
